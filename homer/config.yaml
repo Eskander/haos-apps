@@ -1,20 +1,15 @@
-# https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
-name: Example add-on
-version: "1.2.0"
-slug: example
-description: Example add-on
-url: "https://github.com/home-assistant/addons-example/tree/main/example"
+name: Homer
+version: "1.0"
+slug: homer
+description: A dead simple static HOMe for your servER to keep your services on hand from a simple yaml config. 
+url: "https://github.com/Eskander/ha-addon-homer/tree/main/homer"
+image: "ghcr.io/eskander/ha-addon-homer-{arch}"
 arch:
-  - armhf
   - armv7
   - aarch64
   - amd64
-  - i386
 init: false
+ports:
+  8080/tcp: 8080
 map:
-  - share:rw
-options:
-  message: "Hello world..."
-schema:
-  message: "str?"
-image: "ghcr.io/home-assistant/{arch}-addon-example"
+  - addon_config:rw
