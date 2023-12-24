@@ -1,4 +1,4 @@
 build_from:
-  aarch64: "b4bz/homer:v23.10.1"
-  amd64: "b4bz/homer:v23.10.1"
-  armv7: "b4bz/homer:v23.10.1"
+  aarch64: "docker.io/b4bz/homer:v23.10.1"
+  amd64: "docker.io/b4bz/homer:v23.10.1"
+  armv7: "docker.io/b4bz/homer:v23.10.1"
