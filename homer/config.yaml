@@ -1,7 +1,7 @@
 name: Homer
-version: "1.0"
+version: "1.1"
 slug: homer
-description: A dead simple static HOMe for your servER to keep your services on hand from a simple yaml config. 
+description: A very simple static homepage for your server.
 url: "https://github.com/Eskander/ha-addon-homer/tree/main/homer"
 image: "ghcr.io/eskander/ha-addon-homer-{arch}"
 arch:
@@ -9,7 +9,14 @@ arch:
   - aarch64
   - amd64
 init: false
+ingress: true
+ingress_port: 8080
+panel_icon: mdi:home-variant
 ports:
-  8080/tcp: 8080
+  8080/tcp: null
 map:
   - addon_config:rw
+options:
+  ingress_compatibility: true
+schema:
+  ingress_compatibility: bool
