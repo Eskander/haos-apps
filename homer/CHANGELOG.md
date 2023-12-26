@@ -1,3 +1,5 @@
+## 1.4
+- Enable Dependabot to follow base package
 ## 1.3
 - Switch base to ghcr.io
 - Sign packages
