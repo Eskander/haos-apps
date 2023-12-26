@@ -14,25 +14,18 @@ if [[ "${INIT_ASSETS}" == "1" ]] && [[ ! -f "/www/assets/config.yml" ]]; then
     if [[ $? -ne 0 ]]; then echo "Fail to copy default config file. $PERMISSION_ERROR" && exit 1; fi
 fi
 
-# Detect ingress_compatibility option from addon configuration.
-if grep -q "\"ingress_compatibility\": true" /data/options.json; then
-    echo "Option ingress_compatibility is enabled in addon configuration."
-    if grep -q "connectivityCheck: true" /config/config.yml; then
-        echo "-> Set 'connectivityCheck: false' in addon config.yml"
-        sed -i 's/connectivityCheck: true/connectivityCheck: false/' /config/config.yml
-    else
-        echo "-> Add 'connectivityCheck: false' to addon config.yml"
-        echo -e "\n# Compatibility for Home Assistant Ingress" >> /config/config.yml
-        echo -e  "connectivityCheck: false" >> /config/config.yml
-    fi
+# Set ingress compatibility.
+if grep -q "connectivityCheck" /config/config.yml; then
+    echo "Setting 'connectivityCheck: false' in addon config.yml for ingress support."
+    sed -i 's/connectivityCheck: true/connectivityCheck: false/' /config/config.yml
 else
-    echo "Option ingress_compatibility is disabled in addon configuration."
-    echo "-> Set 'connectivityCheck: true' in addon config.yml"
-    sed -i 's/connectivityCheck: false/connectivityCheck: true/' /config/config.yml
+    echo "Adding 'connectivityCheck: false' to addon config.yml for ingress support."
+    echo -e "\n# Compatibility for Home Assistant Ingress" >> /config/config.yml
+    echo -e  "connectivityCheck: false" >> /config/config.yml
 fi
 
 # Instructions
-echo -e "\nYou can edit your Homer dashboard at /addon_configs/2243a3f0_homer/config.yml\n"
+echo -e "\nEdit your Homer dashboard at /addon_configs/2243a3f0_homer/config.yml\n"
 
 echo "Starting webserver"
 exec lighttpd -D -f /lighttpd.conf
