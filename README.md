@@ -13,6 +13,8 @@
 
 This add-on installs Homer on [Home Assistant](https://www.home-assistant.io/addons/) to be used from the sidebar (*ingress*), or as a standalone dashboard (via *host:port*) for other services.
 
+![screenshot](screenshot.png)
+
 ## Documentation
 
 Add-on documentation is available [here](/homer/DOCS.md).
