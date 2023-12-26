@@ -1,6 +1,2 @@
-build_from:
-  amd64: ghcr.io/bastienwirtz/homer:v23.10.1
-  aarch64: ghcr.io/bastienwirtz/homer:v23.10.1
-  armv7: ghcr.io/bastienwirtz/homer:v23.10.1
 codenotary:
   signer: mail@eskander.tn
