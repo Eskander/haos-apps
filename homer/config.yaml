@@ -1,5 +1,5 @@
 name: Homer
-version: "1.1"
+version: 1.2
 slug: homer
 description: A very simple static homepage for your server.
 url: "https://github.com/Eskander/ha-addon-homer/tree/main/homer"
@@ -11,12 +11,8 @@ arch:
 init: false
 ingress: true
 ingress_port: 8080
-panel_icon: mdi:home-variant
+panel_icon: mdi:server
 ports:
   8080/tcp: null
 map:
   - addon_config:rw
-options:
-  ingress_compatibility: true
-schema:
-  ingress_compatibility: bool
