@@ -1,6 +1,6 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
+FROM ghcr.io/bastienwirtz/homer:v23.10.1
 
+# Use root
 USER 0
 
 # Copy root filesystem
