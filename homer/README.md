@@ -1,15 +1,14 @@
-# Home Assistant Add-on: Example add-on
+# Home Assistant Add-on: Homer
 
-_Example add-on to use as a blueprint for new add-ons._
+![Maintenance](https://img.shields.io/maintenance/yes/2024.svg)
+![Github Actions](https://github.com/Eskander/ha-addon-homer/actions/workflows/builder.yaml/badge.svg?branch=main)
+![Supports amd64 Architecture](https://img.shields.io/badge/amd64-yes-green.svg)
+![Supports aarch64 Architecture](https://img.shields.io/badge/aarch64-yes-green.svg)
+![Supports armv7 Architecture](https://img.shields.io/badge/armv7-yes-green.svg)
+![ingress-badge](https://img.shields.io/badge/-ingress-blueviolet.svg?logo=cliqz&logoColor=white)
 
-![Supports aarch64 Architecture][aarch64-shield]
-![Supports amd64 Architecture][amd64-shield]
-![Supports armhf Architecture][armhf-shield]
-![Supports armv7 Architecture][armv7-shield]
-![Supports i386 Architecture][i386-shield]
+## About
 
-[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
-[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
-[armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg
-[armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
-[i386-shield]: https://img.shields.io/badge/i386-yes-green.svg
+[Homer](https://github.com/bastienwirtz/homer) is a full static html/js dashboard, based on a simple yaml configuration file.
+
+For information about the configuration (`/addon_configs/2243a3f0_homer/config.yml`) options, see project [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
