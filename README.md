@@ -1,6 +1,6 @@
 # Home Assistant Add-on: Homer
 
-![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)
+![Maintenance](https://img.shields.io/maintenance/yes/2024.svg)
 ![Github Actions](https://github.com/Eskander/ha-addon-homer/actions/workflows/builder.yaml/badge.svg?branch=main)
 ![Supports amd64 Architecture](https://img.shields.io/badge/amd64-yes-green.svg)
 ![Supports aarch64 Architecture](https://img.shields.io/badge/aarch64-yes-green.svg)
@@ -19,7 +19,7 @@ This add-on installs Homer on [Home Assistant](https://www.home-assistant.io/add
 
 Add-on documentation is available [here](/homer/DOCS.md).
 
-For information about the configuration (`config.yml`) options, see Homer [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
+For information about configuration options (`config.yml`), see Homer [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
 
 ## Install
 
