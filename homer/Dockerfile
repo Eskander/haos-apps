@@ -3,10 +3,10 @@ FROM ghcr.io/bastienwirtz/homer:v23.10.1
 # Use root
 USER 0
 
-# Copy root filesystem
+# Overlay files
 COPY rootfs /
 
-# Symlink addon config directory
-RUN rm -v -rf /www/assets && ln -v -s /config /www/assets
+# Symlink config directory
+RUN rm -rfv /www/assets && ln -sv /config /www/assets
 
-ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/run.sh"]
