@@ -1,5 +1,5 @@
 ## 1.5
-- Cleanup
+- Update and cleanup initialization
 ## 1.4
 - Enable Dependabot to follow base package
 ## 1.3
