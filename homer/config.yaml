@@ -1,5 +1,5 @@
 name: Homer
-version: "1.5"
+version: "1.6"
 slug: homer
 description: A very simple static homepage for your server
 url: https://github.com/Eskander/ha-addon-homer
@@ -18,4 +18,6 @@ ports:
 ports_description:
   8080/tcp: Web interface
 map:
-  - addon_config:rw
+  - type: addon_config
+    read_only: false
+    path: /www/assets
