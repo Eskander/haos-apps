@@ -1,3 +1,5 @@
+## 1.6
+- Use new Supervisor map (>= 2023.12.1)
 ## 1.5
 - Update and cleanup initialization
 ## 1.4
