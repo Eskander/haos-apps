@@ -6,7 +6,4 @@ USER 0
 # Overlay files
 COPY rootfs /
 
-# Symlink config directory
-RUN rm -rfv /www/assets && ln -sv /config /www/assets
-
 ENTRYPOINT ["/bin/sh", "/run.sh"]
