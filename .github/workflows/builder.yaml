@@ -25,8 +25,7 @@ jobs:
 
       - name: Get changed files
         id: changed_files
-        uses: jitterbit/get-changed-files@v1
-        continue-on-error: true
+        uses: masesgroup/retrieve-changed-files@v3.0.0
 
       - name: Find add-on directories
         id: addons
