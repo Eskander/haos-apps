@@ -2,11 +2,11 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
-    target-branch: dev
+    target-branch: main
     schedule:
       interval: weekly
   - package-ecosystem: docker
     directory: /src
-    target-branch: dev
+    target-branch: main
     schedule:
       interval: weekly
