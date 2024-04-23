@@ -1,3 +1,5 @@
+## 1.7
+- Update to Homer v24.04.1
 ## 1.6
 - Use new Supervisor map (>= 2023.12.1)
 ## 1.5
