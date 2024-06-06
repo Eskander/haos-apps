@@ -1,3 +1,5 @@
+## 1.8
+- Update to Homer v24.05.1
 ## 1.7
 - Update to Homer v24.04.1
 ## 1.6
