@@ -26,6 +26,7 @@ jobs:
       - name: Get changed files
         id: changed_files
         uses: masesgroup/retrieve-changed-files@v3.0.0
+        continue-on-error: true
 
       - name: Find add-on directories
         id: addons
