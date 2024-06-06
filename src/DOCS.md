@@ -19,20 +19,7 @@ Comment out the line in the add-on's `config.yml` to bypass the option reset.
 
 #### How to change the label and/or icon in the sidebar?
 Currently, Home Assistant does not offer an option to customize the label and icon of an add-on in the sidebar.
-
-As a workaround:
-- Enable "**Show in sidebar**" setting.
-- [Hide the default Homer entry from the sidebar.](https://www.home-assistant.io/blog/2020/09/17/release-115/#customize-the-sidebar)
-- Create a custom entry by adding the following block to your Home Assistant `configuration.yaml` and making changes accordingly:
-  ```
-  panel_custom:
-    - name: homer
-      sidebar_title: Homer
-      sidebar_icon: mdi:server
-      js_url: /api/hassio/app/entrypoint.js
-      url_path: "2243a3f0_homer/ingress"
-      embed_iframe: true
-  ```
+As a workaround, create a new _Webpage_ dashboard pointing to `homeassistant.local:port`
 
 ## Support
 For add-on bug reports, [open an issue on GitHub](https://github.com/Eskander/ha-addon-homer/issues).
