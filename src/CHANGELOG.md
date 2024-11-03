@@ -1,9 +1,9 @@
 ## 1.9
-- Homer v24.10.2
+- Bump bastienwirtz/homer from v24.05.1 to v24.10.2
 ## 1.8
-- Homer v24.05.1
+- Bump bastienwirtz/homer from v24.04.1 to v24.05.1
 ## 1.7
-- Homer v24.04.1
+- Bump bastienwirtz/homer from v23.10.1 to v24.04.1
 ## 1.6
 - Use new Supervisor map (>= 2023.12.1)
 ## 1.5
