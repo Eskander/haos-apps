@@ -1,3 +1,5 @@
+# 1.10
+- Bump bastienwirtz/homer from v24.10.2 to v24.11.3
 ## 1.9
 - Bump bastienwirtz/homer from v24.05.1 to v24.10.2
 ## 1.8
