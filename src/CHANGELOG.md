@@ -1,13 +1,13 @@
 # 1.11
-- Bump bastienwirtz/homer from v24.11.3 to v24.11.4
+- Update bastienwirtz/homer to v24.11.4
 # 1.10
-- Bump bastienwirtz/homer from v24.10.2 to v24.11.3
+- Update bastienwirtz/homer to v24.11.3
 ## 1.9
-- Bump bastienwirtz/homer from v24.05.1 to v24.10.2
+- Update bastienwirtz/homer to v24.10.2
 ## 1.8
-- Bump bastienwirtz/homer from v24.04.1 to v24.05.1
+- Update bastienwirtz/homer to v24.05.1
 ## 1.7
-- Bump bastienwirtz/homer from v23.10.1 to v24.04.1
+- Update bastienwirtz/homer to v24.04.1
 ## 1.6
 - Use new Supervisor map (>= 2023.12.1)
 ## 1.5
