@@ -22,10 +22,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
 
+      - uses: dependabot/fetch-metadata@v2
+        id: dependabot-metadata
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
       - name: Extract versions and package info
         id: extract
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
+          PACKAGE_VERSION: ${{ steps.dependabot-metadata.outputs.new-version }}
         run: |
           # Extract current version from config.yaml
           CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/')
@@ -38,8 +43,7 @@ jobs:
           NEW_VERSION="$MAJOR.$NEW_MINOR"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           
-          # Extract package version from PR title - everything between "to" and "in /src"
-          PACKAGE_VERSION=$(echo "$PR_TITLE" | sed -n 's/.*to \(.*\) in \/src.*/\1/p')
+          # Use the package version from dependabot metadata
           echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
 
       - name: Update version in config.yaml
