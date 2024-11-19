@@ -14,6 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2.1.0
