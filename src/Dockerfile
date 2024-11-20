@@ -1,4 +1,4 @@
-FROM ghcr.io/bastienwirtz/homer:v24.11.4
+FROM ghcr.io/bastienwirtz/homer:v24.11.3
 
 # Use root
 USER 0
