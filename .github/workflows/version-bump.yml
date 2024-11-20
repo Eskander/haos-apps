@@ -1,0 +1,67 @@
+name: Version Bump
+
+on:
+  workflow_call:
+    outputs:
+      addon_version:
+        description: "Bumped add-on version"
+        value: ${{ jobs.version-bump.outputs.addon_version }}
+
+permissions:
+  contents: write
+
+jobs:
+  version-bump:
+    name: Version Bump
+    runs-on: ubuntu-latest
+    outputs:
+      addon_version: ${{ steps.bump.outputs.addon_version }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+
+      - name: Fetch Dependency Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2.2.0
+
+      - name: Check Release
+        id: check
+        run: |
+          if [[ "${{ steps.metadata.outputs.dependency-names }}" == "${{ vars.BASE_PACKAGE }}" ]]; then
+            echo "is_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract and Update Versions
+        id: bump
+        if: ${{ steps.check.outputs.is_release == 'true' }}
+        run: |
+          # Extract current version from config.yaml
+          CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Calculate new addon version (bump minor)
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          NEW_MINOR=$((MINOR + 1))
+          ADDON_VERSION="$MAJOR.$NEW_MINOR"
+          echo "addon_version=$ADDON_VERSION" >> $GITHUB_OUTPUT
+          
+          # Update config.yaml with the new addon version
+          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
+          
+          # Update CHANGELOG.md
+          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ vars.BASE_PACKAGE }} to ${{ steps.metadata.outputs.new-version }}\n"
+          echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
+
+      - name: Commit and Push Changes
+        if: ${{ steps.check.outputs.is_release == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/config.yaml src/CHANGELOG.md
+          git commit -m "Bump add-on version to ${{ steps.bump.outputs.addon_version }}"
+          git push
