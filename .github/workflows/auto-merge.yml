@@ -1,0 +1,22 @@
+name: Dependabot Auto-Merge
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Dependabot Auto-Merge
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4.2.2
+
+      - name: Enable Auto-Merge
+        run: |
+          gh pr edit "${{ github.event.pull_request.number }}" --add-label "auto-merged"
+          gh pr merge --auto --merge "${{ github.event.pull_request.number }}"
