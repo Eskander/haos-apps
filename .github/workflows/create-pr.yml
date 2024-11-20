@@ -1,0 +1,65 @@
+name: Create Release PR
+
+on:
+  workflow_call:
+    inputs:
+      addon_version:
+        type: string
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pr:
+    name: Create Release PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Get Commit List
+        id: get-commits
+        run: |
+          # Fetch release branch
+          git fetch origin release:release --no-tags
+          
+          # Get the last commit that was merged to release
+          LAST_RELEASE_COMMIT=$(git merge-base main release)
+          
+          # Get all commits between last release and current main
+          COMMITS=$(git log --pretty=format:"- %s (%h)" $LAST_RELEASE_COMMIT..main)
+          
+          # Properly handle multiline output for GitHub Actions
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "commits<<$EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        run: |
+          PR_BODY=$(cat <<EOF
+          ## Automated Release Update
+          
+          ### Version: ${{ inputs.addon_version }}
+          
+          ### Dependency Updates
+          - Package: ${{ vars.BASE_PACKAGE }}
+          
+          ### Commits
+          ${{ steps.get-commits.outputs.commits }}
+          EOF
+          )
+          
+          gh pr create \
+            --base release \
+            --head main \
+            --title "Release: ${{ inputs.addon_version }}" \
+            --body "$PR_BODY" \
+            --reviewer "Eskander" \
+            --assignee "Eskander" \
+            --label "release"
