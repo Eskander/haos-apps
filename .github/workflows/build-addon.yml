@@ -1,6 +1,7 @@
 name: Build Add-on
 
 on:
+  workflow_call:
   push:
     branches:
       - release
@@ -8,21 +9,14 @@ on:
       - 'src/config.yaml'
       - 'src/Dockerfile'
       - 'src/rootfs/**'
-  pull_request:
-    types: [opened, synchronize, reopened, labeled]
-    branches:
-      - release
-    paths:
-      - 'src/config.yaml'
-      - 'src/Dockerfile'
-      - 'src/rootfs/**'
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'deploy'))
     name: Build multi-arch add-on
     steps:
       - name: Check out repository
@@ -53,7 +47,7 @@ jobs:
       - name: Prepare tags
         id: tags
         run: |
-          IMAGE_NAME="ghcr.io/${{ github.repository }}"
+          IMAGE_NAME="ghcr.io/${{ github.repository | toLower }}"
           VERSION="${{ steps.info.outputs.version }}"
           
           if [ "${{ github.event_name }}" == "pull_request" ]; then
