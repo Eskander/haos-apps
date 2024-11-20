@@ -1,0 +1,30 @@
+name: Orchestrator
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    uses: ./.github/workflows/auto-merge.yml
+
+  version-bump:
+    needs: [auto-merge]
+    uses: ./.github/workflows/version-bump.yml
+
+  create-pr:
+    needs: [auto-merge, version-bump]
+    if: ${{ needs.version-bump.outputs.addon_version != '' }}
+    uses: ./.github/workflows/create-pr.yml
+    with:
+      addon_version: ${{ needs.version-bump.outputs.addon_version }}
+
+  build-addon-ci:
+    needs: [create-pr]
+    uses: ./.github/workflows/build-addon.yml
+    if: ${{ github.event.pull_request.head.ref == 'main' && github.event.pull_request.base.ref == 'release' }}
