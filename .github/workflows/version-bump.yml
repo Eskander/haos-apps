@@ -4,7 +4,7 @@ on:
   workflow_call:
     outputs:
       addon_version:
-        description: "Bumped add-on version"
+        description: "New add-on version"
         value: ${{ jobs.version-bump.outputs.addon_version }}
 
 permissions:
