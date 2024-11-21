@@ -1,6 +1,7 @@
 name: Dependabot Auto-Merge
 
 on:
+  workflow_call:
   pull_request_target:
     branches:
       - main
@@ -17,7 +18,7 @@ permissions:
 
 jobs:
   auto-merge:
-    name: Dependabot Auto-Merge
+    name: Auto-Merge PR
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
