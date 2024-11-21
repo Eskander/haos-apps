@@ -6,6 +6,10 @@ on:
       addon_version:
         type: string
         required: true
+    outputs:
+      pr_number:
+        description: "The number of the created PR"
+        value: ${{ jobs.create-pr.outputs.pr_number }}
 
 permissions:
   contents: write
@@ -15,6 +19,8 @@ jobs:
   create-pr:
     name: Create Release PR
     runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.create-pr.outputs.pr_number }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4.2.2
@@ -41,6 +47,7 @@ jobs:
           echo "$EOF" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
+        id: create-pr
         run: |
           PR_BODY=$(cat <<EOF
           ## Automated Release Update
@@ -55,11 +62,15 @@ jobs:
           EOF
           )
           
-          gh pr create \
+          PR_OUTPUT=$(gh pr create \
             --base release \
             --head main \
             --title "Release: ${{ inputs.addon_version }}" \
             --body "$PR_BODY" \
             --reviewer "Eskander" \
             --assignee "Eskander" \
-            --label "release"
+            --label "release")
+          
+          # Extract PR number from the output
+          PR_NUMBER=$(echo "$PR_OUTPUT" | grep -oP 'https://github.com/[^/]+/[^/]+/pull/\K\d+')
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
