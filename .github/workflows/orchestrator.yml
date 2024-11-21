@@ -27,5 +27,7 @@ jobs:
   build-addon-ci:
     needs: [create-pr]
     uses: ./.github/workflows/build-addon.yml
+    permissions:
+      packages: write
     with:
       pr_number: ${{ needs.create-pr.outputs.pr_number }}
