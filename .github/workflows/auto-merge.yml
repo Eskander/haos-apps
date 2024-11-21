@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'src/Dockerfile'
 
 permissions:
   contents: write
@@ -13,7 +15,7 @@ jobs:
   auto-merge:
     name: Dependabot Auto-Merge
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]' && !contains(github.event.pull_request.title, vars.BASE_PACKAGE)
+    if: github.actor == 'dependabot[bot]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
