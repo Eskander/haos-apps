@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]' && !contains(github.event.pull_request.title, vars.BASE_PACKAGE)
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+
       - name: Enable auto-merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
