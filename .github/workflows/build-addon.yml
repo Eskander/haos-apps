@@ -58,7 +58,7 @@ jobs:
           IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
           VERSION="${{ steps.info.outputs.version }}"
           
-          if [ "${{ github.event_name }}" == "pull_request" ] then
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
             # For CI builds (labeled PR), only create a local tag
             TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
             PUSH="false"
