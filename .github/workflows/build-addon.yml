@@ -2,8 +2,6 @@ name: Build Add-on
 
 on:
   pull_request:
-    branches:
-      - release
     types:
       - labeled
   push:
@@ -22,13 +20,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build multi-arch add-on
-    if: github.event_name == 'push' || github.event.label.name == 'release'
+    if: github.event.label.name == 'validate' || github.event_name == 'push'
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4.2.2
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
+
+      - name: Run Home Assistant add-on lint
+        uses: frenck/action-addon-linter@v2.18.0
+        with:
+          path: "./src"
 
       - name: Get information
         id: info
@@ -58,29 +61,22 @@ jobs:
           IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
           VERSION="${{ steps.info.outputs.version }}"
           
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            # For CI builds (labeled PR), only create a local tag
-            TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
-            PUSH="false"
-          elif [ "${{ github.event_name }}" == "push" ]; then
+          if [ "${{ github.event_name }}" == "push" ]; then
             # For push to release, create versioned and latest tags
             TAGS="${IMAGE_NAME}:${VERSION},${IMAGE_NAME}:latest"
-            PUSH="true"
           else
-            # Fallback for other cases
+            # For CI builds (labeled PR), only create a local tag
             TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
-            PUSH="false"
           fi
           
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
-          echo "push=${PUSH}" >> $GITHUB_OUTPUT
 
       - name: Build and push
         uses: docker/build-push-action@v5.4.0
         with:
           context: ./src
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: ${{ steps.tags.outputs.push == 'true' }}
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
