@@ -42,7 +42,7 @@ jobs:
           path: "./src"
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3.1.0
+        uses: docker/setup-qemu-action@v3.2.0
         with:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
 
