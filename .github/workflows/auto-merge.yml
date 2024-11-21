@@ -1,7 +1,7 @@
 name: Dependabot Auto-Merge
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
     paths-ignore:
@@ -17,12 +17,19 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+      - name: Fetch dependency metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2.2.0
+
+      - name: Approve PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr review --approve ${{github.event.pull_request.html_url}}
 
       - name: Enable auto-merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr edit "${{ github.event.pull_request.number }}" --add-label "auto-merged"
-          gh pr merge --auto --merge "${{ github.event.pull_request.number }}"
+          gh pr edit --add-label "auto-merged" "${{ github.event.pull_request.html_url }}"
+          gh pr merge --auto --merge "${{ github.event.pull_request.html_url }}"
