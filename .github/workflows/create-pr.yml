@@ -17,17 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4.2.2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Approve PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr review --approve ${{github.event.pull_request.html_url}}
 
       - name: Enable auto-merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr edit "${{ github.event.pull_request.number }}" --add-label "auto-merged"
-          gh pr merge "${{ github.event.pull_request.number }}" --auto --merge
+          gh pr edit --add-label "auto-merged" "${{ github.event.pull_request.html_url }}"
+          gh pr merge --auto --merge "${{ github.event.pull_request.html_url }}"
 
   bump-version:
     name: Bump version and changelog
@@ -140,4 +141,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
-          gh pr edit ${{ steps.create-pr.outputs.pr_url }} --add-label "validate"
+          gh pr edit --add-label "validate" ${{ steps.create-pr.outputs.pr_url }}
