@@ -72,7 +72,7 @@ jobs:
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
 
       - name: Build and push
-        uses: docker/build-push-action@v5.4.0
+        uses: docker/build-push-action@v6.9.0
         with:
           context: ./src
           platforms: linux/amd64,linux/arm64,linux/arm/v7
