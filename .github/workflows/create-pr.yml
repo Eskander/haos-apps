@@ -1,34 +1,83 @@
 name: Create Release PR
 
 on:
-  workflow_call:
-    inputs:
-      addon_version:
-        type: string
-        required: true
-    outputs:
-      pr_number:
-        description: "The number of the created PR"
-        value: ${{ jobs.create-pr.outputs.pr_number }}
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  create-pr:
-    name: Create Release PR
+  merge-base:
+    name: Upgrade ${{ vars.BASE_PACKAGE }}
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]' && contains(github.event.pull_request.title, vars.BASE_PACKAGE)
+    steps:
+      - name: Enable auto-merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge --auto --merge "${{ github.event.pull_request.number }}"
+
+  bump-version:
+    name: Bump version and changelog
+    needs: merge-base
     runs-on: ubuntu-latest
     outputs:
-      pr_number: ${{ steps.create-pr.outputs.pr_number }}
+      addon_version: ${{ steps.bump.outputs.addon_version }}
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+
+      - name: Extract and update version
+        id: bump
+        run: |
+          # Extract current version from config.yaml
+          CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Calculate new addon version (bump minor)
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          NEW_MINOR=$((MINOR + 1))
+          ADDON_VERSION="$MAJOR.$NEW_MINOR"
+          echo "addon_version=$ADDON_VERSION" >> $GITHUB_OUTPUT
+          
+          # Update config.yaml with the new addon version
+          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
+          
+          # Update CHANGELOG.md
+          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ vars.BASE_PACKAGE }} to ${{ steps.metadata.outputs.new-version }}\n"
+          echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/config.yaml src/CHANGELOG.md
+          git commit -m "Bump add-on version to ${{ steps.bump.outputs.addon_version }}"
+          git push
+
+  create-release-pr:
+    name: Create pull request
+    needs: bump-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
         uses: actions/checkout@v4.2.2
         with:
           ref: main
           fetch-depth: 0
 
-      - name: Get Commit List
+      - name: Fetch dependency metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2.2.0
+
+      - name: Get commit list
         id: get-commits
         run: |
           # Fetch release branch
@@ -46,7 +95,7 @@ jobs:
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "$EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Pull Request
+      - name: Create pull request
         id: create-pr
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -54,25 +103,29 @@ jobs:
           PR_BODY=$(cat <<EOF
           ## Automated Release Update
           
-          ### Version: ${{ inputs.addon_version }}
+          ### Version: ${{ needs.bump-version.outputs.addon_version }}
           
           ### Dependency Updates
           - Package: ${{ vars.BASE_PACKAGE }}
+          - Updated Version: ${{ steps.metadata.outputs.new-version }}
           
           ### Commits
           ${{ steps.get-commits.outputs.commits }}
           EOF
           )
           
-          PR_OUTPUT=$(gh pr create \
+          PR_URL=$(gh pr create \
             --base release \
             --head main \
-            --title "Release: ${{ inputs.addon_version }}" \
+            --title "Release: ${{ needs.bump-version.outputs.addon_version }}" \
             --body "$PR_BODY" \
             --reviewer "Eskander" \
-            --assignee "Eskander" \
-            --label "release")
+            --assignee "Eskander")
           
-          # Extract PR number from the output
-          PR_NUMBER=$(echo "$PR_OUTPUT" | grep -oP 'https://github.com/[^/]+/[^/]+/pull/\K\d+')
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+      - name: Add label for CI
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          gh pr edit ${{ steps.create-pr.outputs.pr_url }} --add-label "release"
