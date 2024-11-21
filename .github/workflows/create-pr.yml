@@ -1,0 +1,138 @@
+name: Create Release PR
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    paths:
+      - 'src/Dockerfile'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-base:
+    name: Upgrade base package
+    uses: ./.github/workflows/auto-merge.yml
+
+  bump-version:
+    name: Bump version and changelog
+    needs: merge-base
+    runs-on: ubuntu-latest
+    outputs:
+      addon_version: ${{ steps.bump.outputs.addon_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch dependency metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2.2.0
+
+      - name: Extract and update version
+        id: bump
+        run: |
+          # Extract current version from config.yaml
+          CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Calculate new addon version (bump minor)
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          NEW_MINOR=$((MINOR + 1))
+          ADDON_VERSION="$MAJOR.$NEW_MINOR"
+          echo "addon_version=$ADDON_VERSION" >> $GITHUB_OUTPUT
+          
+          # Update config.yaml with the new addon version
+          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
+          
+          # Update CHANGELOG.md
+          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ steps.metadata.outputs.new-version }}\n"
+          echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/config.yaml src/CHANGELOG.md
+          git commit -m "Bump version to ${{ steps.bump.outputs.addon_version }}"
+          git push
+
+  create-release-pr:
+    name: Create pull request
+    needs: bump-version
+    runs-on: ubuntu-latest
+    outputs:
+      pr_url: ${{ steps.create-pr.outputs.pr_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch dependency metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2.2.0
+
+      - name: Get commit list
+        id: get-commits
+        run: |
+          # Fetch release branch
+          git fetch origin release:release --no-tags
+          
+          # Get the last commit that was merged to release
+          LAST_RELEASE_COMMIT=$(git merge-base main release)
+          
+          # Get all commits between last release and current main
+          COMMITS=$(git log --pretty=format:"- %s (%h)" $LAST_RELEASE_COMMIT..main)
+          
+          # Properly handle multiline output for GitHub Actions
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "commits<<$EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+      - name: Create pull request
+        id: create-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_BODY=$(cat <<EOF
+          ## Automated Release Update
+          
+          ### Version: ${{ needs.bump-version.outputs.addon_version }}
+          
+          ### Dependency Updates
+          - Package: ${{ steps.metadata.outputs.dependency-names }}
+          - Updated Version: ${{ steps.metadata.outputs.new-version }}
+          
+          ### Commits
+          ${{ steps.get-commits.outputs.commits }}
+          EOF
+          )
+          
+          PR_URL=$( gh pr create \
+            --base release \
+            --head main \
+            --title "Release: ${{ needs.bump-version.outputs.addon_version }}" \
+            --body "$PR_BODY" \
+            --reviewer "Eskander" \
+            --assignee "Eskander" )
+          
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+  trigger-ci:
+    name: Add CI label to PR
+    needs: create-release-pr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add label for CI
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          gh pr edit --add-label "validate" ${{ needs.create-release-pr.outputs.pr_url }}
