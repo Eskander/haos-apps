@@ -48,6 +48,8 @@ jobs:
 
       - name: Create Pull Request
         id: create-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_BODY=$(cat <<EOF
           ## Automated Release Update
