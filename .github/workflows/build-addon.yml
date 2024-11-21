@@ -1,12 +1,6 @@
 name: Build Add-on
 
 on:
-  workflow_call:
-    inputs:
-      pr_number:
-        type: string
-        required: false
-        description: "The PR number to build"
   push:
     branches:
       - release
@@ -14,6 +8,9 @@ on:
       - 'src/config.yaml'
       - 'src/Dockerfile'
       - 'src/rootfs/**'
+  pull_request:
+    types:
+      - labeled
 
 permissions:
   contents: read
@@ -23,12 +20,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build multi-arch add-on
-    if: ${{ inputs.pr_number != '' || github.event_name == 'push' }}
+    if: >
+      github.event_name == 'push' || 
+      (github.event_name == 'pull_request' && github.event.label.name == 'release')
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ inputs.pr_number != '' && format('refs/pull/{0}/merge', inputs.pr_number) || github.ref }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
 
       - name: Get information
         id: info
@@ -58,16 +58,16 @@ jobs:
           IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
           VERSION="${{ steps.info.outputs.version }}"
           
-          if [ "${{ inputs.pr_number }}" != "" ]; then
-            # For CI builds (PR), only create a local tag
-            TAGS="${IMAGE_NAME}:pr-${{ inputs.pr_number }}"
+          if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ github.event.label.name }}" == "release" ]; then
+            # For CI builds (labeled PR), only create a local tag
+            TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
             PUSH="false"
           elif [ "${{ github.event_name }}" == "push" ]; then
             # For push to release, create versioned and latest tags
             TAGS="${IMAGE_NAME}:${VERSION},${IMAGE_NAME}:latest"
             PUSH="true"
           else
-            # Fallback for pull requests
+            # Fallback for other cases
             TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
             PUSH="false"
           fi
