@@ -2,6 +2,8 @@ name: Build Add-on
 
 on:
   pull_request:
+    branches:
+      - release
     types:
       - labeled
   push:
