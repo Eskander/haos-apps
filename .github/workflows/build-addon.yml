@@ -2,6 +2,11 @@ name: Build Add-on
 
 on:
   workflow_call:
+    inputs:
+      pr_number:
+        type: string
+        required: false
+        description: "The PR number to build"
   push:
     branches:
       - release
@@ -18,9 +23,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build multi-arch add-on
+    if: ${{ inputs.pr_number != '' || github.event_name == 'push' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ inputs.pr_number != '' && format('refs/pull/{0}/merge', inputs.pr_number) || github.ref }}
 
       - name: Get information
         id: info
@@ -50,20 +58,29 @@ jobs:
           IMAGE_NAME="ghcr.io/${{ github.repository | toLower }}"
           VERSION="${{ steps.info.outputs.version }}"
           
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
-          else
+          if [ "${{ inputs.pr_number }}" != "" ]; then
+            # For CI builds (PR), only create a local tag
+            TAGS="${IMAGE_NAME}:pr-${{ inputs.pr_number }}"
+            PUSH="false"
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            # For push to release, create versioned and latest tags
             TAGS="${IMAGE_NAME}:${VERSION},${IMAGE_NAME}:latest"
+            PUSH="true"
+          else
+            # Fallback for pull requests
+            TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
+            PUSH="false"
           fi
           
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "push=${PUSH}" >> $GITHUB_OUTPUT
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: ./src
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ steps.tags.outputs.push == 'true' }}
           tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
