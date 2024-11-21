@@ -1,7 +1,9 @@
 name: Dependabot Auto-Merge
 
 on:
-  workflow_call:
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -13,12 +15,23 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4.2.2
 
-      - name: Enable Auto-Merge
+      - name: Fetch dependency metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2.2.0
+
+      - name: Enable auto-merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr edit "${{ github.event.pull_request.number }}" --add-label "auto-merged"
           gh pr merge --auto --merge "${{ github.event.pull_request.number }}"
+
+      - name: Mark release
+        if: ${{ steps.metadata.outputs.dependency-names == vars.BASE_PACKAGE }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          gh pr edit "${{ github.event.pull_request.number }}" --add-label "base"
