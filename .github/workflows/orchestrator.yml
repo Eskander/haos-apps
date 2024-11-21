@@ -23,8 +23,6 @@ jobs:
     uses: ./.github/workflows/create-pr.yml
     with:
       addon_version: ${{ needs.version-bump.outputs.addon_version }}
-    outputs:
-      pr_number: ${{ jobs.create-pr.outputs.pr_number }}
 
   build-addon-ci:
     needs: [create-pr]
