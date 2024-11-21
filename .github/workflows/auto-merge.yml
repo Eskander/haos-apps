@@ -17,8 +17,8 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Enable Auto-Merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr edit "${{ github.event.pull_request.number }}" --add-label "auto-merged"
           gh pr merge --auto --merge "${{ github.event.pull_request.number }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
