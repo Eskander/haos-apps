@@ -55,7 +55,7 @@ jobs:
       - name: Prepare tags
         id: tags
         run: |
-          IMAGE_NAME="ghcr.io/${{ github.repository | toLower }}"
+          IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
           VERSION="${{ steps.info.outputs.version }}"
           
           if [ "${{ inputs.pr_number }}" != "" ]; then
