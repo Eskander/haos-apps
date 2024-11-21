@@ -37,12 +37,12 @@ jobs:
           path: "./src"
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v3.1.0
         with:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.7.0
 
       - name: Login to GitHub Container Registry
         if: github.event_name == 'push'
@@ -76,7 +76,7 @@ jobs:
           echo "push=${PUSH}" >> $GITHUB_OUTPUT
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v5.4.0
         with:
           context: ./src
           platforms: linux/amd64,linux/arm64,linux/arm/v7
