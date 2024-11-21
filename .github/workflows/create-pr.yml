@@ -19,13 +19,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Enable auto-merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr edit "${{ github.event.pull_request.number }}" --add-label "auto-merged"
-          gh pr merge --auto --merge "${{ github.event.pull_request.number }}"
+          gh pr merge "${{ github.event.pull_request.number }}" --auto --merge
 
   bump-version:
     name: Bump version and changelog
@@ -37,7 +39,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Fetch dependency metadata
         id: metadata
@@ -80,7 +82,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Fetch dependency metadata
@@ -124,13 +126,13 @@ jobs:
           EOF
           )
           
-          PR_URL=$(gh pr create \
+          PR_URL=$( gh pr create \
             --base release \
             --head main \
             --title "Release: ${{ needs.bump-version.outputs.addon_version }}" \
             --body "$PR_BODY" \
             --reviewer "Eskander" \
-            --assignee "Eskander")
+            --assignee "Eskander" )
           
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
 
