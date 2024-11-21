@@ -1,9 +1,11 @@
 name: Create Release PR
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
+    paths:
+      - 'src/Dockerfile'
 
 permissions:
   contents: write
@@ -129,6 +131,6 @@ jobs:
 
       - name: Add label for CI
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
           gh pr edit ${{ steps.create-pr.outputs.pr_url }} --add-label "release"
