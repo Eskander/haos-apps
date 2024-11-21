@@ -1,6 +1,11 @@
 name: Build Add-on
 
 on:
+  pull_request:
+    branches:
+      - release
+    types:
+      - labeled
   push:
     branches:
       - release
@@ -8,9 +13,6 @@ on:
       - 'src/config.yaml'
       - 'src/Dockerfile'
       - 'src/rootfs/**'
-  pull_request:
-    types:
-      - labeled
 
 permissions:
   contents: read
@@ -20,9 +22,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build multi-arch add-on
-    if: >
-      github.event_name == 'push' || 
-      (github.event_name == 'pull_request' && github.event.label.name == 'release')
+    if: github.event_name == 'push' || github.event.label.name == 'release'
 
     steps:
       - name: Check out repository
@@ -58,7 +58,7 @@ jobs:
           IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
           VERSION="${{ steps.info.outputs.version }}"
           
-          if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ github.event.label.name }}" == "release" ]; then
+          if [ "${{ github.event_name }}" == "pull_request" ] then
             # For CI builds (labeled PR), only create a local tag
             TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
             PUSH="false"
