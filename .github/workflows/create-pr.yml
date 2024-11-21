@@ -65,6 +65,8 @@ jobs:
     name: Create pull request
     needs: bump-version
     runs-on: ubuntu-latest
+    outputs:
+      pr_url: ${{ steps.create-pr.outputs.pr_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
@@ -123,8 +125,13 @@ jobs:
           
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
 
+  trigger-ci:
+    name: Add CI label to PR
+    needs: create-release-pr
+    runs-on: ubuntu-latest
+    steps:
       - name: Add label for CI
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
-          gh pr edit --add-label "validate" ${{ steps.create-pr.outputs.pr_url }}
+          gh pr edit --add-label "validate" ${{ needs.create-release-pr.outputs.pr_url }}
