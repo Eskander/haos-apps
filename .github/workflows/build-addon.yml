@@ -1,11 +1,9 @@
 name: Build Add-on
 
 on:
-  pull_request:
-    branches:
-      - release
+  pull_request_review:
     types:
-      - approved
+      - submitted
   push:
     branches:
       - release
@@ -22,12 +20,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build multi-arch add-on
+    if: (github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'release') || github.event_name == 'push'
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
+          ref: ${{ github.event_name == 'pull_request_review' && github.event.pull_request.head.ref || github.ref }}
 
       - name: Run Home Assistant add-on lint
         uses: frenck/action-addon-linter@v2.18.0
