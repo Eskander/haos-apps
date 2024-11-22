@@ -12,13 +12,38 @@ permissions:
   pull-requests: write
 
 jobs:
+  metadata:
+    name: Prepare dependency metadata
+    runs-on: ubuntu-latest
+    outputs:
+      package_name: ${{ steps.extract-metadata.outputs.dependency-names }}
+      package_version: ${{ steps.get-version.outputs.package_version }}
+    steps:
+      - name: Fetch dependency metadata
+        id: extract-metadata
+        uses: dependabot/fetch-metadata@v2.2.0
+        
+      - name: Get package version
+        id: get-version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.extract-metadata.outputs.new-version }}"
+          
+          if [ "$VERSION" = "" ]; then
+            REPO_NAME="${{ steps.extract-metadata.outputs.dependency-names }}"
+            VERSION=$(gh api repos/$REPO_NAME/releases/latest --jq .tag_name)
+          fi
+          
+          echo "package_version=$VERSION" >> $GITHUB_OUTPUT
+
   merge-base:
     name: Upgrade base package
     uses: ./.github/workflows/auto-merge.yml
 
   bump-version:
     name: Bump version and changelog
-    needs: merge-base
+    needs: [metadata, merge-base]
     runs-on: ubuntu-latest
     outputs:
       addon_version: ${{ steps.bump.outputs.addon_version }}
@@ -27,10 +52,6 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           ref: main
-
-      - name: Fetch dependency metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v2.2.0
 
       - name: Extract and update version
         id: bump
@@ -50,7 +71,7 @@ jobs:
           sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
           
           # Update CHANGELOG.md
-          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ steps.metadata.outputs.new-version }}\n"
+          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ needs.metadata.outputs.package_name }} to ${{ needs.metadata.outputs.package_version }}\n"
           echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
 
       - name: Commit and push changes
@@ -63,7 +84,7 @@ jobs:
 
   create-release-pr:
     name: Create pull request
-    needs: bump-version
+    needs: [metadata, bump-version]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -71,10 +92,6 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-
-      - name: Fetch dependency metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v2.2.0
 
       - name: Get commit list
         id: get-commits
@@ -105,8 +122,8 @@ jobs:
           ### Version: ${{ needs.bump-version.outputs.addon_version }}
           
           ### Dependency Updates
-          - Package: ${{ steps.metadata.outputs.dependency-names }}
-          - Updated Version: ${{ steps.metadata.outputs.new-version }}
+          - Package: ${{ needs.metadata.outputs.package_name }}
+          - Updated Version: ${{ needs.metadata.outputs.package_version }}
           
           ### Commits
           ${{ steps.get-commits.outputs.commits }}
