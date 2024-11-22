@@ -2,11 +2,11 @@ name: Dependabot Auto-Merge
 
 on:
   workflow_call:
-  pull_request_target:
+  pull_request:
     branches:
       - main
-    paths-ignore:
-      - 'src/Dockerfile'
+    paths:
+      - '.github/**'
 
 concurrency:
   group: dependabot
@@ -35,7 +35,7 @@ jobs:
           gh pr edit --add-label "auto-merged" "${{ github.event.pull_request.html_url }}"
           gh pr merge --merge "${{ github.event.pull_request.html_url }}"
 
-      - name: Try Auto-Merge
+      - name: Or try Auto-Merge
         if: failure()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
