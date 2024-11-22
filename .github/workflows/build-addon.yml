@@ -5,7 +5,7 @@ on:
     branches:
       - release
     types:
-      - labeled
+      - approved
   push:
     branches:
       - release
@@ -22,7 +22,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build multi-arch add-on
-    if: github.event.label.name == 'validate' || github.event_name == 'push'
 
     steps:
       - name: Check out repository
@@ -67,7 +66,7 @@ jobs:
             # For push to release, create versioned and latest tags
             TAGS="${IMAGE_NAME}:${VERSION},${IMAGE_NAME}:latest"
           else
-            # For CI builds (labeled PR), only create a local tag
+            # For CI builds (approved PR), only create a local tag
             TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
           fi
           
