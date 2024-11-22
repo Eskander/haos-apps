@@ -99,3 +99,5 @@ jobs:
             org.opencontainers.image.url=https://github.com/${{ github.repository }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.documentation=https://github.com/${{ github.repository }}
+          annotations: |
+            org.opencontainers.image.description=${{ github.event.repository.description }}
