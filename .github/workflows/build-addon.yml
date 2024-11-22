@@ -78,6 +78,7 @@ jobs:
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.tags.outputs.tags }}
           context: ./src
+          provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |
@@ -97,6 +98,6 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.url=https://github.com/${{ github.repository }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
           annotations: |
             org.opencontainers.image.description=${{ github.event.repository.description }}
