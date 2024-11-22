@@ -59,25 +59,24 @@ jobs:
         id: tags
         run: |
           IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
-          VERSION="${{ steps.info.outputs.version }}"
           
           if [ "${{ github.event_name }}" == "push" ]; then
             # For push to release, create versioned and latest tags
-            TAGS="${IMAGE_NAME}:${VERSION},${IMAGE_NAME}:latest"
+            echo "tags=${IMAGE_NAME}:${{ steps.info.outputs.version }},${IMAGE_NAME}:latest" >> $GITHUB_OUTPUT
           else
-            # For CI builds (approved PR), only create a local tag
-            TAGS="${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}"
+            # For CI builds (approved PR), just create a PR-specific tag
+            echo "tags=${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           fi
-          
-          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
 
       - name: Build and push
         uses: docker/build-push-action@v6.9.0
+        id: build
         with:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.tags.outputs.tags }}
           context: ./src
+          outputs: type=docker,dest=/tmp/image.tar
           provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -101,3 +100,11 @@ jobs:
             org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
           annotations: |
             org.opencontainers.image.description=${{ github.event.repository.description }}
+
+      - name: Upload image artifact
+        if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-pr${{ github.event.pull_request.number }}
+          path: /tmp/image.tar
+          retention-days: 1
