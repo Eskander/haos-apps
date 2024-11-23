@@ -20,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build multi-arch add-on
-    if: (github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'release') || github.event_name == 'push'
+    if: github.event_name == 'push' || github.event.review.state == 'approved'
 
     steps:
       - name: Check out repository
@@ -78,6 +78,7 @@ jobs:
           context: ./src
           outputs: type=oci,dest=/tmp/image.tar
           provenance: false
+          sbom: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |
@@ -102,7 +103,7 @@ jobs:
             org.opencontainers.image.description=${{ github.event.repository.description }}
 
       - name: Upload image artifact
-        if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+        if: github.event_name == 'pull_request_review'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}-pr${{ github.event.pull_request.number }}
