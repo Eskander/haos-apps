@@ -11,22 +11,33 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
-  metadata:
-    name: Prepare dependency metadata
+  release-process:
+    name: Release process
     runs-on: ubuntu-latest
-    outputs:
-      package_name: ${{ steps.extract-metadata.outputs.dependency-names }}
-      package_version: ${{ steps.get-version.outputs.package_version }}
+    if: github.actor == 'dependabot[bot]'
     steps:
+      - name: Merge Dependabot PR
+        run: |
+          gh pr review --approve ${{github.event.pull_request.html_url}}
+          gh pr edit --add-label "auto-merged" "${{ github.event.pull_request.html_url }}"
+          gh pr merge --merge "${{ github.event.pull_request.html_url }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
+          fetch-depth: 0
+
       - name: Fetch dependency metadata
         id: extract-metadata
         uses: dependabot/fetch-metadata@v2.2.0
         
       - name: Get package version
         id: get-version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.extract-metadata.outputs.new-version }}"
           
@@ -37,23 +48,7 @@ jobs:
           
           echo "package_version=$VERSION" >> $GITHUB_OUTPUT
 
-  merge-base:
-    name: Upgrade base package
-    uses: ./.github/workflows/auto-merge.yml
-
-  bump-version:
-    name: Bump version and changelog
-    needs: [metadata, merge-base]
-    runs-on: ubuntu-latest
-    outputs:
-      addon_version: ${{ steps.bump.outputs.addon_version }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4.2.2
-        with:
-          ref: main
-
-      - name: Extract and update version
+      - name: Bump version and update changelog
         id: bump
         run: |
           # Extract current version from config.yaml
@@ -71,7 +66,7 @@ jobs:
           sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
           
           # Update CHANGELOG.md
-          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ needs.metadata.outputs.package_name }} to ${{ needs.metadata.outputs.package_version }}\n"
+          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.extract-metadata.outputs.dependency-names }} to ${{ steps.get-version.outputs.package_version }}\n"
           echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
 
       - name: Commit and push changes
@@ -81,17 +76,6 @@ jobs:
           git add src/config.yaml src/CHANGELOG.md
           git commit -m "Bump version to ${{ steps.bump.outputs.addon_version }}"
           git push
-
-  create-release-pr:
-    name: Create pull request
-    needs: [metadata, bump-version]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4.2.2
-        with:
-          ref: main
-          fetch-depth: 0
 
       - name: Get commit list
         id: get-commits
@@ -112,18 +96,15 @@ jobs:
           echo "$EOF" >> $GITHUB_OUTPUT
 
       - name: Create pull request
-        id: create-pr
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_BODY=$(cat <<EOF
           ## Automated Release Update
           
-          ### Version: ${{ needs.bump-version.outputs.addon_version }}
+          ### Version: ${{ steps.bump.outputs.addon_version }}
           
           ### Dependency Updates
-          - Package: ${{ needs.metadata.outputs.package_name }}
-          - Updated Version: ${{ needs.metadata.outputs.package_version }}
+          - Package: ${{ steps.extract-metadata.outputs.dependency-names }}
+          - Updated Version: ${{ steps.get-version.outputs.package_version }}
           
           ### Commits
           ${{ steps.get-commits.outputs.commits }}
@@ -133,7 +114,7 @@ jobs:
           gh pr create \
             --base release \
             --head main \
-            --title "Release: ${{ needs.bump-version.outputs.addon_version }}" \
+            --title "Release: ${{ steps.bump.outputs.addon_version }}" \
             --body "$PR_BODY" \
             --reviewer "Eskander" \
             --assignee "Eskander" \
