@@ -76,7 +76,7 @@ jobs:
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.tags.outputs.tags }}
           context: ./src
-          outputs: type=docker,dest=/tmp/image.tar
+          outputs: type=oci,dest=/tmp/image.tar
           provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
