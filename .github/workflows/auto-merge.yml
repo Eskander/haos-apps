@@ -1,7 +1,6 @@
 name: Dependabot Auto-Merge
 
 on:
-  workflow_call:
   pull_request:
     branches:
       - main
@@ -18,26 +17,14 @@ permissions:
 
 jobs:
   auto-merge:
-    name: Merge Dependabot PR
+    name: Auto merge
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - name: Approve PR
+      - name: Merge Dependabot PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr review --approve ${{github.event.pull_request.html_url}}
-
-      - name: Merge PR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
           gh pr edit --add-label "auto-merged" "${{ github.event.pull_request.html_url }}"
           gh pr merge --merge "${{ github.event.pull_request.html_url }}"
-
-      - name: Or try Auto-Merge
-        if: failure()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr merge --merge --auto "${{ github.event.pull_request.html_url }}"
