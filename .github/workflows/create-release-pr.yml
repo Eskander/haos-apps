@@ -17,104 +17,107 @@ env:
 
 jobs:
   release-process:
-    name: Release process
+    name: Release Process
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
+    
     steps:
-      - name: Merge Dependabot PR
+      - name: Process Dependabot Pull Request
         run: |
+          # Approve and merge the Dependabot PR automatically
           gh pr review --approve ${{ github.event.pull_request.html_url }}
           gh pr edit --add-label "auto-merged" "${{ github.event.pull_request.html_url }}"
           gh pr merge --merge "${{ github.event.pull_request.html_url }}"
 
-      - name: Fetch dependency metadata
+      - name: Get dependency update metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2.2.0
 
-      - name: Continue if Release
+      - name: Verify Release Type
         id: check
         run: |
-          PACKAGE_ECOSYSTEM="${{ steps.metadata.outputs.package-ecosystem }}"
-          
-          if [ "$PACKAGE_ECOSYSTEM" = "docker" ]; then
+          # Only proceed with release process for Docker updates
+          if [ "${{ steps.metadata.outputs.package-ecosystem }}" = "docker" ]; then
             echo "is_release=true" >> $GITHUB_OUTPUT
           else
             echo "is_release=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Checkout repository
+      - name: Checkout Repository
         if: steps.check.outputs.is_release == 'true'
         uses: actions/checkout@v4.2.2
         with:
           ref: main
           fetch-depth: 0
 
-      - name: Get package version
+      - name: Determine Package Version
         if: steps.check.outputs.is_release == 'true'
         id: get-version
         run: |
+          # Try to get version from metadata, fallback to API if not available
           VERSION="${{ steps.metadata.outputs.new-version }}"
           
-          if [ "$VERSION" = "" ]; then
+          if [ -z "$VERSION" ]; then
             VERSION=$(gh api repos/${{ steps.metadata.outputs.dependency-names }}/releases/latest --jq .tag_name)
           fi
           
           echo "package_version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Bump version and update changelog
+      - name: Update Version and Changelog
         if: steps.check.outputs.is_release == 'true'
         id: bump
         run: |
-          # Extract current version from config.yaml
+          # Get current version from config
           CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/')
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           
-          # Calculate new addon version (bump minor)
+          # Calculate new version (minor bump)
           MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
           MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
           NEW_MINOR=$((MINOR + 1))
           ADDON_VERSION="$MAJOR.$NEW_MINOR"
           echo "addon_version=$ADDON_VERSION" >> $GITHUB_OUTPUT
           
-          # Update config.yaml with the new addon version
+          # Update files with new version
           sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
           
-          # Update CHANGELOG.md
+          # Prepend new changelog entry
           NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ steps.get-version.outputs.package_version }}\n"
           echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
 
-      - name: Commit and push changes
+      - name: Commit Changes
         if: steps.check.outputs.is_release == 'true'
         run: |
+          # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Commit and push changes
           git add src/config.yaml src/CHANGELOG.md
           git commit -m "Bump version to ${{ steps.bump.outputs.addon_version }}"
           git push
 
-      - name: Get commit list
+      - name: Generate Commit History
         if: steps.check.outputs.is_release == 'true'
         id: get-commits
         run: |
-          # Fetch release branch
+          # Get commit history since last release
           git fetch origin release:release --no-tags
-          
-          # Get the last commit that was merged to release
           LAST_RELEASE_COMMIT=$(git merge-base main release)
-          
-          # Get all commits between last release and current main
           COMMITS=$(git log --pretty=format:"- %s (%h)" $LAST_RELEASE_COMMIT..main)
           
-          # Properly handle multiline output for GitHub Actions
+          # Format output for GitHub Actions
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           echo "commits<<$EOF" >> $GITHUB_OUTPUT
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "$EOF" >> $GITHUB_OUTPUT
 
-      - name: Create pull request
+      - name: Create Release Pull Request
         if: steps.check.outputs.is_release == 'true'
         run: |
-          PR_BODY=$(cat <<EOF
+          # Prepare PR description
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          PR_BODY=$(cat <<$EOF
           ## Automated Release Update
           
           ### Version: ${{ steps.bump.outputs.addon_version }}
@@ -125,9 +128,10 @@ jobs:
           
           ### Commits
           ${{ steps.get-commits.outputs.commits }}
-          EOF
+          $EOF
           )
           
+          # Create pull request
           gh pr create \
             --base release \
             --head main \
