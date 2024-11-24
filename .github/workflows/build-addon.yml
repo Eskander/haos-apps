@@ -25,8 +25,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4.2.2
-        with:
-          ref: ${{ github.event_name == 'pull_request_review' && github.event.pull_request.head.ref || github.ref }}
 
       - name: Run Home Assistant add-on lint
         uses: frenck/action-addon-linter@v2.18.0
