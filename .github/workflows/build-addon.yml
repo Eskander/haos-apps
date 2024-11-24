@@ -18,34 +18,34 @@ permissions:
 
 jobs:
   build:
+    name: Build Multi-arch Add-on
     runs-on: ubuntu-latest
-    name: Build multi-arch add-on
     if: github.event_name == 'push' || github.event.review.state == 'approved'
-
+    
     steps:
-      - name: Check out repository
+      - name: Checkout Repository
         uses: actions/checkout@v4.2.2
 
-      - name: Run Home Assistant add-on lint
+      - name: Validate Add-on Configuration
         uses: frenck/action-addon-linter@v2.18.0
         with:
           path: ./src
 
-      - name: Get information
+      - name: Extract Add-on Information
         id: info
         uses: home-assistant/actions/helpers/info@master
         with:
           path: ./src
 
-      - name: Setup QEMU
+      - name: Configure QEMU for Multi-arch Support
         uses: docker/setup-qemu-action@v3.2.0
         with:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
 
-      - name: Set up Docker Buildx
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3.7.1
 
-      - name: Login to GitHub Container Registry
+      - name: Authenticate with GitHub Container Registry
         if: github.event_name == 'push'
         uses: docker/login-action@v3.3.0
         with:
@@ -53,27 +53,28 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare tags
+      - name: Generate Docker Image Tags
         id: tags
         run: |
+          # Convert repository name to lowercase for Docker compatibility
           IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
           
           if [ "${{ github.event_name }}" == "push" ]; then
-            # For push to release, create versioned and latest tags
+            # For release builds, create versioned and latest tags
             echo "tags=${IMAGE_NAME}:${{ steps.info.outputs.version }},${IMAGE_NAME}:latest" >> $GITHUB_OUTPUT
           else
-            # For CI builds (approved PR), just create a PR-specific tag
-            echo "tags=${IMAGE_NAME}:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            # For CI builds, create PR-specific tag
+            echo "tags=${IMAGE_NAME}:pr${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push
+      - name: Build and Push Multi-arch Image
         uses: docker/build-push-action@v6.9.0
         id: build
         with:
+          context: ./src
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.tags.outputs.tags }}
-          context: ./src
           outputs: type=oci,dest=/tmp/image.tar
           provenance: false
           sbom: false
@@ -100,7 +101,7 @@ jobs:
           annotations: |
             org.opencontainers.image.description=${{ github.event.repository.description }}
 
-      - name: Upload image artifact
+      - name: Save CI Build Artifact
         if: github.event_name == 'pull_request_review'
         uses: actions/upload-artifact@v4.4.2
         with:
