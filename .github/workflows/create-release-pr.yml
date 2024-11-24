@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - '.github/**'
       - 'src/Dockerfile'
 
 permissions:
@@ -22,33 +23,46 @@ jobs:
     steps:
       - name: Merge Dependabot PR
         run: |
-          gh pr review --approve ${{github.event.pull_request.html_url}}
+          gh pr review --approve ${{ github.event.pull_request.html_url }}
           gh pr edit --add-label "auto-merged" "${{ github.event.pull_request.html_url }}"
           gh pr merge --merge "${{ github.event.pull_request.html_url }}"
 
+      - name: Fetch dependency metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2.2.0
+
+      - name: Continue if Release
+        id: check
+        run: |
+          PACKAGE_ECOSYSTEM="${{ steps.metadata.outputs.package-ecosystem }}"
+          
+          if [ "$PACKAGE_ECOSYSTEM" = "docker" ]; then
+            echo "is_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout repository
+        if: steps.check.outputs.is_release == 'true'
         uses: actions/checkout@v4.2.2
         with:
           ref: main
           fetch-depth: 0
 
-      - name: Fetch dependency metadata
-        id: extract-metadata
-        uses: dependabot/fetch-metadata@v2.2.0
-        
       - name: Get package version
+        if: steps.check.outputs.is_release == 'true'
         id: get-version
         run: |
-          VERSION="${{ steps.extract-metadata.outputs.new-version }}"
+          VERSION="${{ steps.metadata.outputs.new-version }}"
           
           if [ "$VERSION" = "" ]; then
-            REPO_NAME="${{ steps.extract-metadata.outputs.dependency-names }}"
-            VERSION=$(gh api repos/$REPO_NAME/releases/latest --jq .tag_name)
+            VERSION=$(gh api repos/${{ steps.metadata.outputs.dependency-names }}/releases/latest --jq .tag_name)
           fi
           
           echo "package_version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Bump version and update changelog
+        if: steps.check.outputs.is_release == 'true'
         id: bump
         run: |
           # Extract current version from config.yaml
@@ -66,10 +80,11 @@ jobs:
           sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
           
           # Update CHANGELOG.md
-          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.extract-metadata.outputs.dependency-names }} to ${{ steps.get-version.outputs.package_version }}\n"
+          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ steps.get-version.outputs.package_version }}\n"
           echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
 
       - name: Commit and push changes
+        if: steps.check.outputs.is_release == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -78,6 +93,7 @@ jobs:
           git push
 
       - name: Get commit list
+        if: steps.check.outputs.is_release == 'true'
         id: get-commits
         run: |
           # Fetch release branch
@@ -96,6 +112,7 @@ jobs:
           echo "$EOF" >> $GITHUB_OUTPUT
 
       - name: Create pull request
+        if: steps.check.outputs.is_release == 'true'
         run: |
           PR_BODY=$(cat <<EOF
           ## Automated Release Update
@@ -103,7 +120,7 @@ jobs:
           ### Version: ${{ steps.bump.outputs.addon_version }}
           
           ### Dependency Updates
-          - Package: ${{ steps.extract-metadata.outputs.dependency-names }}
+          - Package: ${{ steps.metadata.outputs.dependency-names }}
           - Updated Version: ${{ steps.get-version.outputs.package_version }}
           
           ### Commits
