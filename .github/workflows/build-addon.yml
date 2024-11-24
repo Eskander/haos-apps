@@ -103,7 +103,7 @@ jobs:
 
       - name: Save CI Build Artifact
         if: github.event_name == 'pull_request_review'
-        uses: actions/upload-artifact@v4.4.2
+        uses: actions/upload-artifact@v4.4.3
         with:
           name: ${{ github.event.repository.name }}-pr${{ github.event.pull_request.number }}.zip
           path: /tmp/image.tar
