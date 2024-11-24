@@ -104,7 +104,7 @@ jobs:
 
       - name: Upload image artifact
         if: github.event_name == 'pull_request_review'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.2
         with:
           name: ${{ github.event.repository.name }}-pr${{ github.event.pull_request.number }}.zip
           path: /tmp/image.tar
