@@ -1,3 +1,5 @@
+# 1.13
+- Update bastienwirtz/homer to v24.11.5
 # 1.12
 - Switch to multi-arch container
 # 1.11
