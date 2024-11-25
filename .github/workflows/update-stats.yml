@@ -11,7 +11,7 @@ jobs:
     
     steps:
     - name: Get Stats
-      uses: actionstore/ghcr-stats@v1
+      uses: actionstore/ghcr-stats@v1.0.4
       with:
         owner: ${{ github.repository_owner }}
         repo: ${{ github.event.repository.name }}
