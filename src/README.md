@@ -1,11 +1,12 @@
 # Home Assistant Add-on: Homer
 
-![Build Add-on](https://github.com/Eskander/ha-addon-homer/actions/workflows/build-addon.yml/badge.svg?branch=release)
 ![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)
-![Supports amd64 Architecture](https://img.shields.io/badge/amd64-yes-green.svg)
-![Supports aarch64 Architecture](https://img.shields.io/badge/aarch64-yes-green.svg)
-![Supports armv7 Architecture](https://img.shields.io/badge/armv7-yes-green.svg)
-![ingress-badge](https://img.shields.io/badge/-ingress-blueviolet.svg?logo=cliqz&logoColor=white)
+![Builder](https://img.shields.io/github/actions/workflow/status/Eskander/ha-addon-homer/.github%2Fworkflows%2Fbuild-addon.yml?branch=release&event=push)
+![AMD64 Support](https://img.shields.io/badge/amd64-yes-green.svg)
+![AArch64 Support](https://img.shields.io/badge/aarch64-yes-green.svg)
+![ARMv7 Support](https://img.shields.io/badge/armv7-yes-green.svg)
+![Ingress](https://img.shields.io/badge/-ingress-blueviolet.svg?logo=cliqz&logoColor=white)
+![Installs](https://img.shields.io/badge/dynamic/json?url=https://gist.githubusercontent.com/Eskander/7bbbf38fce9710cb995f20defb9bd5a5/raw/package-stats.json&query=$.ha-addon-homer.total&label=Installs)
 
 ## About
 
