@@ -25,19 +25,24 @@ jobs:
         # Get downloads count from stats.json
         TOTAL=$(jq -r '.downloads_compact' /tmp/stats.json)
         MONTHLY=$(jq -r '.downloads_month_compact' /tmp/stats.json)
-        
-        # Create the content for the specific file
-        CONTENT=$(jq -n \
+
+        # Fetch the existing gist content
+        EXISTING_CONTENT=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "/gists/7bbbf38fce9710cb995f20defb9bd5a5" | jq -r '.files["package-stats.json"].content')
+
+        # Update the specific key in the JSON
+        UPDATED_CONTENT=$(echo "$EXISTING_CONTENT" | jq \
           --arg repo "${{ github.event.repository.name }}" \
           --arg total "$TOTAL" \
           --arg monthly "$MONTHLY" \
-          '{($repo): {"total": $total, "monthly": $monthly}}' \
-        )
-        
+          '. + {($repo): {"total": $total, "monthly": $monthly}}')
+
         # Update gist using GitHub API
         gh api \
           --method PATCH \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
           "/gists/7bbbf38fce9710cb995f20defb9bd5a5" \
-          -f "files[package-stats.json][content]=$CONTENT"
+          -f "files[package-stats.json][content]=$UPDATED_CONTENT"
