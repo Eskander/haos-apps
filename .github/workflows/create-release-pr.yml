@@ -48,7 +48,6 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           ref: main
-          fetch-depth: 0
 
       - name: Determine Package Version
         if: steps.check.outputs.is_release == 'true'
@@ -97,38 +96,19 @@ jobs:
           git commit -m "Bump version to ${{ steps.bump.outputs.addon_version }}"
           git push
 
-      - name: Generate Commit History
-        if: steps.check.outputs.is_release == 'true'
-        id: get-commits
-        run: |
-          # Get commit history since last release
-          git fetch origin release:release --no-tags
-          LAST_RELEASE_COMMIT=$(git merge-base main release)
-          COMMITS=$(git log --pretty=format:"- %s (%h)" $LAST_RELEASE_COMMIT..main)
-          
-          # Format output for GitHub Actions
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "commits<<$EOF" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
-          echo "$EOF" >> $GITHUB_OUTPUT
-
       - name: Create Release Pull Request
         if: steps.check.outputs.is_release == 'true'
         run: |
           # Prepare PR description
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          PR_BODY=$(cat <<$EOF
-          ## Automated Release Update
+          PR_BODY=$(cat <<EOF
+          ## Release Update
           
           ### Version: ${{ steps.bump.outputs.addon_version }}
           
           ### Dependency Updates
           - Package: ${{ steps.metadata.outputs.dependency-names }}
           - Updated Version: ${{ steps.get-version.outputs.package_version }}
-          
-          ### Commits
-          ${{ steps.get-commits.outputs.commits }}
-          $EOF
+          EOF
           )
           
           # Create pull request
