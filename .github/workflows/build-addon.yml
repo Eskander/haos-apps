@@ -68,7 +68,7 @@ jobs:
           fi
 
       - name: Build and Push Multi-arch Image
-        uses: docker/build-push-action@v6.9.0
+        uses: docker/build-push-action@v6.10.0
         id: build
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
