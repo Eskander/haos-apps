@@ -102,9 +102,7 @@ jobs:
           # Prepare PR description
           PR_BODY=$(cat <<EOF
           ## Release Update
-          
           ### Version: ${{ steps.bump.outputs.addon_version }}
-          
           ### Dependency Updates
           - Package: ${{ steps.metadata.outputs.dependency-names }}
           - Updated Version: ${{ steps.get-version.outputs.package_version }}
