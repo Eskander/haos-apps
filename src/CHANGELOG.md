@@ -1,3 +1,5 @@
+# 1.14
+- Update bastienwirtz/homer to v24.12.1
 # 1.13
 - Update bastienwirtz/homer to v24.11.5
 # 1.12
