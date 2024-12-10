@@ -38,7 +38,6 @@ jobs:
         uses: dependabot/fetch-metadata@v2.2.0
 
       - name: Determine Package Version
-        id: get-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -49,27 +48,25 @@ jobs:
             VERSION=$(gh api repos/${{ steps.metadata.outputs.dependency-names }}/releases/latest --jq .tag_name)
           fi
           
-          echo "package_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Update Version and Changelog
-        id: bump
         run: |
           # Get current version from config
           CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/')
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           
           # Calculate new version (minor bump)
           MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
           MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
           NEW_MINOR=$((MINOR + 1))
           ADDON_VERSION="$MAJOR.$NEW_MINOR"
-          echo "addon_version=$ADDON_VERSION" >> $GITHUB_OUTPUT
+          echo "ADDON_VERSION=$ADDON_VERSION" >> $GITHUB_ENV
           
           # Update files with new version
           sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
           
           # Prepend new changelog entry
-          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ steps.get-version.outputs.package_version }}\n"
+          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ env.PACKAGE_VERSION }}\n"
           echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
 
       - name: Commit Changes
@@ -80,7 +77,7 @@ jobs:
           
           # Commit and push changes
           git add src/config.yaml src/CHANGELOG.md
-          git commit -m "Bump version to ${{ steps.bump.outputs.addon_version }}"
+          git commit -m "Bump version to $ADDON_VERSION"
           git push
 
       - name: Validate Add-on Configuration
@@ -103,9 +100,13 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate Image Name
+        run: |
+          # Convert repository name to lowercase for Docker compatibility
+          echo IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Build and Push Multi-arch Image
         uses: docker/build-push-action@v6.10.0
-        id: build
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
@@ -116,17 +117,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):latest
-            ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):${{ steps.bump.outputs.addon_version }}
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ env.ADDON_VERSION }}
           labels: |
             io.hass.name=${{ github.event.repository.name }}
-            io.hass.version=${{ steps.bump.outputs.addon_version }}
+            io.hass.version=${{ env.ADDON_VERSION }}
             io.hass.description=${{ github.event.repository.description }}
             io.hass.url=https://github.com/${{ github.repository }}
             io.hass.type=addon
             io.hass.arch=amd64|aarch64|armhf
             org.opencontainers.image.title=${{ github.event.repository.name }}
-            org.opencontainers.image.version=${{ steps.bump.outputs.addon_version }}
+            org.opencontainers.image.version=${{ env.ADDON_VERSION }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
             org.opencontainers.image.authors=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
             org.opencontainers.image.vendor=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
@@ -136,5 +137,3 @@ jobs:
             org.opencontainers.image.url=https://github.com/${{ github.repository }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
-          annotations: |
-            index:org.opencontainers.image.description=${{ github.event.repository.description }}
