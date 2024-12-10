@@ -1,0 +1,23 @@
+name: Dependabot Auto-Merge
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/**'
+
+jobs:
+  automerge:
+    name: Auto-Merge
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Process Dependabot Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Approve and merge Dependabot PR automatically
+          gh pr review ${{ github.event.pull_request.html_url }} --approve
+          gh pr edit ${{ github.event.pull_request.html_url }} --add-label auto-merged
+          gh pr merge ${{ github.event.pull_request.html_url }} --merge
