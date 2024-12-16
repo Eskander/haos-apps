@@ -7,6 +7,10 @@ on:
     paths:
       - '.github/**'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   automerge:
     name: Auto-Merge
