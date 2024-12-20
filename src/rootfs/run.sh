@@ -1,16 +1,17 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-# Set Ingress compatibility
-if [ ! -f /www/assets/config.yml ]; then
-    echo "Initializing config..."
-    echo -e "\n# Disabled for compatibility with Home Assistant Ingress\nconnectivityCheck: false" >> /www/default-assets/config.yml.dist
-else
+CHECK=$(/get_option.sh connectivity_check)
+
+if [ -f "/www/assets/config.yml" ]; then
     echo "Verifying config..."
-    if grep -q "connectivityCheck" /www/assets/config.yml; then
-        sed -i 's/^connectivityCheck:.*/connectivityCheck: false/' /www/assets/config.yml
+    if grep -q "^connectivityCheck:" "/www/assets/config.yml"; then
+        sed -i "s/^connectivityCheck:.*/connectivityCheck: $CHECK/" "/www/assets/config.yml"
     else
-        echo -e "\n# Disabled for compatibility with Home Assistant Ingress\nconnectivityCheck: false" >> /www/assets/config.yml
+        echo "connectivityCheck: $CHECK" >> "/www/assets/config.yml"
     fi
+else
+    echo "Initializing config..."
+    echo "connectivityCheck: $CHECK" >> "/www/default-assets/config.yml.dist"
 fi
 
 chmod +x /entrypoint.sh
