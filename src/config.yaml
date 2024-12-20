@@ -13,11 +13,13 @@ init: false
 ingress: true
 ingress_port: 8080
 panel_icon: mdi:server
+options:
+  connectivity_check: false
+schema:
+  connectivity_check: bool
 ports:
   8080/tcp: null
-ports_description:
-  8080/tcp: Web interface
 map:
   - type: addon_config
-    read_only: false
     path: /www/assets
+    read_only: false

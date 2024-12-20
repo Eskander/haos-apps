@@ -1,0 +1,6 @@
+configuration:
+  connectivity_check:
+    name: connectivityCheck
+    description: Breaks Home Assistant Ingress
+network:
+  8080/tcp: Web interface
