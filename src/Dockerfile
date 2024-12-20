@@ -6,4 +6,4 @@ USER 0
 # Overlay files
 COPY rootfs /
 
-ENTRYPOINT ["/bin/sh", "/run.sh"]
+ENTRYPOINT ["/run.sh"]
