@@ -1,6 +1,7 @@
 name: Build & Release
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
@@ -16,10 +17,10 @@ jobs:
   release-process:
     name: Release Process
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.actor == 'dependabot[bot]' || github.event_name == 'workflow_dispatch'
     steps:
-
       - name: Process Dependabot Pull Request
+        if: github.actor == 'dependabot[bot]'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -28,16 +29,13 @@ jobs:
           gh pr edit ${{ github.event.pull_request.html_url }} --add-label auto-merged,release
           gh pr merge ${{ github.event.pull_request.html_url }} --merge
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4.2.2
-        with:
-          ref: main
-
       - name: Get Dependency Metadata
+        if: github.actor == 'dependabot[bot]'
         id: metadata
         uses: dependabot/fetch-metadata@v2.2.0
 
       - name: Determine Package Version
+        if: github.actor == 'dependabot[bot]'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -49,6 +47,11 @@ jobs:
           fi
           
           echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: main
 
       - name: Update Version and Changelog
         run: |
@@ -65,17 +68,19 @@ jobs:
           # Update files with new version
           sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
           
+          # Prepare changelog entry based on trigger type
+          if [ "${{ github.actor }}" == "dependabot[bot]" ]; then
+            NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ env.PACKAGE_VERSION }}\n"
+          else
+            NEW_ENTRY="# $ADDON_VERSION\n- TODO\n"
+          fi
+          
           # Prepend new changelog entry
-          NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ env.PACKAGE_VERSION }}\n"
           echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
-
-      - name: Commit Changes
-        run: |
-          # Configure git
+          
+          # Configure git and commit changes
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Commit and push changes
           git add src/config.yaml src/CHANGELOG.md
           git commit -m "Bump version to $ADDON_VERSION"
           git push
