@@ -1,6 +1,6 @@
 configuration:
   connectivity_check:
     name: connectivityCheck
-    description: Incompatible with Home Assistant Ingress (https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md#connectivity-checks)
+    description: Breaks Home Assistant Ingress
 network:
   8080/tcp: Web interface
