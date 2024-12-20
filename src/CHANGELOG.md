@@ -1,5 +1,5 @@
 # 1.15
-- TODO
+- Add [connectivityCheck](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md#connectivity-checks) option to configuration
 # 1.14
 - Update bastienwirtz/homer to v24.12.1
 # 1.13
