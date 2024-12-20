@@ -1,7 +1,7 @@
 # Home Assistant Add-on: Homer
 
 ![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)
-![Builder](https://img.shields.io/github/actions/workflow/status/Eskander/ha-addon-homer/.github/workflows/build.yml)
+![Build](https://img.shields.io/github/actions/workflow/status/Eskander/ha-addon-homer/.github/workflows/release.yml)
 ![AMD64 Support](https://img.shields.io/badge/amd64-yes-green.svg)
 ![AArch64 Support](https://img.shields.io/badge/aarch64-yes-green.svg)
 ![ARMv7 Support](https://img.shields.io/badge/armv7-yes-green.svg)
