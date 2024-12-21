@@ -1,6 +1,6 @@
 configuration:
   connectivity_check:
-    name: connectivityCheck
-    description: Breaks Home Assistant Ingress
+    name: Connectivity check
+    description: Enable Homer connectivity check (Breaks Home Assistant Ingress)
 network:
   8080/tcp: Web interface
