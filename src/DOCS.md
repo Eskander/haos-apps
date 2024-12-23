@@ -1,4 +1,4 @@
-# Home Assistant Add-on: Homer
+# Homer Dashboard Add-on for Home Assistant
 
 ## How to use
 Enable "**Show in sidebar**" setting to add Homer Dashboard to Home Assistant sidebar.
@@ -22,3 +22,5 @@ As a workaround, create a new _Webpage_ dashboard pointing to `homeassistant.loc
 
 ## Support
 For add-on bug reports, [open an issue on GitHub](https://github.com/Eskander/ha-addon-homer/issues).
+
+For discussions, [visit Home Assistant Forum topic](https://community.home-assistant.io/t/homer-dashboard-add-on-for-home-assistant/815430?u=eskander).
