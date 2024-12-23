@@ -1,4 +1,4 @@
-# Home Assistant Add-on: Homer
+# Homer Dashboard Add-on for Home Assistant
 
 ![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)
 ![Build](https://img.shields.io/github/actions/workflow/status/Eskander/ha-addon-homer/.github/workflows/release.yml)
