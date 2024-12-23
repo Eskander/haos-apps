@@ -21,6 +21,8 @@ This add-on installs Homer on [Home Assistant](https://www.home-assistant.io/add
 
 Add-on documentation is available [here](/homer/DOCS.md).
 
+Visit Home Assistant Forum [topic](https://community.home-assistant.io/t/homer-dashboard-add-on-for-home-assistant/815430?u=eskander) for discussions.
+
 For information about configuration options (`config.yml`), see Homer [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
 
 ## Install
