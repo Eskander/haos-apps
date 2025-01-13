@@ -91,7 +91,7 @@ jobs:
           path: ./src
 
       - name: Configure QEMU for Multi-arch Support
-        uses: docker/setup-qemu-action@v3.2.0
+        uses: docker/setup-qemu-action@v3.3.0
         with:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
 
@@ -111,7 +111,7 @@ jobs:
           echo IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Build and Push Multi-arch Image
-        uses: docker/build-push-action@v6.10.0
+        uses: docker/build-push-action@v6.11.0
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
