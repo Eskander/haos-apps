@@ -6,7 +6,7 @@ updates:
       interval: weekly
     groups:
       build-deps:
-        patterns: "*"
+        patterns: ["*"]
   - package-ecosystem: docker
     directory: /src
     schedule:
