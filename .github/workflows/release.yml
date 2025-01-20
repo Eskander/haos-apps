@@ -111,7 +111,7 @@ jobs:
           echo IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Build and Push Multi-arch Image
-        uses: docker/build-push-action@v6.11.0
+        uses: docker/build-push-action@v6.12.0
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
