@@ -1,14 +1,14 @@
-# 1.15
+## 1.15
 - Add [connectivityCheck](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md#connectivity-checks) option to configuration
-# 1.14
+## 1.14
 - Update bastienwirtz/homer to v24.12.1
-# 1.13
+## 1.13
 - Update bastienwirtz/homer to v24.11.5
-# 1.12
+## 1.12
 - Switch to multi-arch container
-# 1.11
+## 1.11
 - Update bastienwirtz/homer to v24.11.4
-# 1.10
+## 1.10
 - Update bastienwirtz/homer to v24.11.3
 ## 1.9
 - Update bastienwirtz/homer to v24.10.2
