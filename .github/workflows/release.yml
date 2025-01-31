@@ -70,9 +70,9 @@ jobs:
           
           # Prepare changelog entry based on trigger type
           if [ "${{ github.actor }}" == "dependabot[bot]" ]; then
-            NEW_ENTRY="# $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ env.PACKAGE_VERSION }}\n"
+            NEW_ENTRY="## $ADDON_VERSION\n- Update ${{ steps.metadata.outputs.dependency-names }} to ${{ env.PACKAGE_VERSION }}\n"
           else
-            NEW_ENTRY="# $ADDON_VERSION\n- TODO\n"
+            NEW_ENTRY="## $ADDON_VERSION\n- TODO\n"
           fi
           
           # Prepend new changelog entry
