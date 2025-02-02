@@ -10,4 +10,4 @@ updates:
   - package-ecosystem: docker
     directory: /src
     schedule:
-      interval: daily
+      interval: weekly
