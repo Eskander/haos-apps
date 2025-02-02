@@ -1,3 +1,5 @@
+## 1.16
+- Update bastienwirtz/homer to v25.02.1
 ## 1.15
 - Add [connectivityCheck](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md#connectivity-checks) option to configuration
 ## 1.14
