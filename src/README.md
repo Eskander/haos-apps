@@ -13,4 +13,4 @@
 
 [Homer](https://github.com/bastienwirtz/homer) is a full static html/js dashboard, based on a simple yaml configuration file.
 
-For information about configuration options (`/addon_configs/2243a3f0_homer/config.yml`), see project [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
+For information about Homer configuration options, see upstream [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
