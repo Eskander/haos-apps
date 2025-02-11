@@ -1,4 +1,4 @@
-# Homer Dashboard Add-on for Home Assistant
+# Homer Dashboard Add-on for Home Assistant  
 
 ![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)
 ![Build](https://img.shields.io/github/actions/workflow/status/Eskander/ha-addon-homer/.github/workflows/release.yml)
@@ -9,22 +9,22 @@
 ![Pulls](https://img.shields.io/badge/dynamic/json?url=https://gist.githubusercontent.com/Eskander/7bbbf38fce9710cb995f20defb9bd5a5/raw/package-stats.json&query=$.ha-addon-homer.total&label=Pulls)
 ![Installs](https://img.shields.io/badge/dynamic/json?url=https://analytics.home-assistant.io/addons.json&query=$["2243a3f0_homer"].total&label=Reported%20Installs)
 
-## About
+## About  
 
-[Homer](https://github.com/bastienwirtz/homer) is a full static html/js dashboard, based on a simple yaml configuration file. 
+[Homer](https://github.com/bastienwirtz/homer) is a fully static HTML/JS dashboard that uses a simple YAML configuration file for customization.  
 
-This add-on installs Homer Dashboard on [Home Assistant OS](https://www.home-assistant.io/addons/), allowing access through the sidebar or directly via *host:port*.
+This add-on installs Homer Dashboard on [Home Assistant OS](https://www.home-assistant.io/addons/), providing access via the sidebar or directly through *host:port*.  
 
-![screenshot](screenshot.png)
+![Screenshot](img/screenshot.png)  
 
-## Documentation
+## Documentation  
 
-Add-on documentation is available at [DOCS.md](/src/DOCS.md).
+The add-on documentation is available at [DOCS.md](/src/DOCS.md).  
 
-Visit Home Assistant [forum topic](https://community.home-assistant.io/t/homer-dashboard-add-on-for-home-assistant/815430?u=eskander) for discussions.
+For discussions, [visit the Home Assistant Forum](https://community.home-assistant.io/t/homer-dashboard-add-on-for-home-assistant/815430?u=eskander).  
 
-For information about Homer configuration options, see upstream [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
+For configuration options, refer to the official [Homer documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).  
 
-## Install
+## Installation  
 
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/Eskander/ha-addon-homer)
+[![Open your Home Assistant instance and show the add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/Eskander/ha-addon-homer)
