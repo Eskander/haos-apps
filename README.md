@@ -19,7 +19,7 @@ This add-on installs Homer Dashboard on [Home Assistant OS](https://www.home-ass
 
 ## Documentation
 
-Add-on documentation is available at [DOCS.md](/homer/DOCS.md).
+Add-on documentation is available at [DOCS.md](/src/DOCS.md).
 
 Visit Home Assistant [forum topic](https://community.home-assistant.io/t/homer-dashboard-add-on-for-home-assistant/815430?u=eskander) for discussions.
 
