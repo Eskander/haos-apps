@@ -13,17 +13,17 @@
 
 [Homer](https://github.com/bastienwirtz/homer) is a full static html/js dashboard, based on a simple yaml configuration file. 
 
-This add-on installs Homer on [Home Assistant](https://www.home-assistant.io/addons/) to be used from the sidebar (*ingress*), or as a standalone dashboard (via *host:port*) for other services.
+This add-on installs Homer Dashboard on [Home Assistant OS](https://www.home-assistant.io/addons/), allowing access through the sidebar or directly via *host:port*.
 
 ![screenshot](screenshot.png)
 
 ## Documentation
 
-Add-on documentation is available [here](/homer/DOCS.md).
+Add-on documentation is available at [DOCS.md](/homer/DOCS.md).
 
-Visit Home Assistant Forum [topic](https://community.home-assistant.io/t/homer-dashboard-add-on-for-home-assistant/815430?u=eskander) for discussions.
+Visit Home Assistant [forum topic](https://community.home-assistant.io/t/homer-dashboard-add-on-for-home-assistant/815430?u=eskander) for discussions.
 
-For information about configuration options (`config.yml`), see Homer [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
+For information about Homer configuration options, see upstream [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
 
 ## Install
 
