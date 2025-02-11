@@ -1,4 +1,4 @@
-# Homer Dashboard Add-on for Home Assistant
+# Homer Dashboard Add-on for Home Assistant  
 
 ![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)
 ![Build](https://img.shields.io/github/actions/workflow/status/Eskander/ha-addon-homer/.github/workflows/release.yml)
@@ -9,8 +9,8 @@
 ![Pulls](https://img.shields.io/badge/dynamic/json?url=https://gist.githubusercontent.com/Eskander/7bbbf38fce9710cb995f20defb9bd5a5/raw/package-stats.json&query=$.ha-addon-homer.total&label=Pulls)
 ![Installs](https://img.shields.io/badge/dynamic/json?url=https://analytics.home-assistant.io/addons.json&query=$["2243a3f0_homer"].total&label=Reported%20Installs)
 
-## About
+## About  
 
-[Homer](https://github.com/bastienwirtz/homer) is a full static html/js dashboard, based on a simple yaml configuration file.
+[Homer](https://github.com/bastienwirtz/homer) is a fully static HTML/JS dashboard that uses a simple YAML configuration file for customization.  
 
-For information about Homer configuration options, see upstream [documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
+For configuration details, refer to the official [Homer documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).
