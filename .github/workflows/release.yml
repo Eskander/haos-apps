@@ -27,7 +27,7 @@ jobs:
           # Approve and merge Dependabot PR automatically
           gh pr review ${{ github.event.pull_request.html_url }} --approve
           gh pr edit ${{ github.event.pull_request.html_url }} --add-label auto-merged,release
-          gh pr merge ${{ github.event.pull_request.html_url }} --merge
+          gh pr merge ${{ github.event.pull_request.html_url }} --rebase
 
       - name: Get Dependency Metadata
         if: github.actor == 'dependabot[bot]'

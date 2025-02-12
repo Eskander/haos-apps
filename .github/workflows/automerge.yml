@@ -26,5 +26,5 @@ jobs:
           gh pr edit ${{ github.event.pull_request.html_url }} --add-label auto-merged
           
           for i in {1..5}; do
-            gh pr merge ${{ github.event.pull_request.html_url }} --merge && break || sleep 10
+            gh pr merge ${{ github.event.pull_request.html_url }} --rebase && break || sleep 10
           done
