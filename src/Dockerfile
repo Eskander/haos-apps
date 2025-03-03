@@ -1,1 +1,1 @@
-FROM ghcr.io/bastienwirtz/homer:v25.02.1
+FROM ghcr.io/bastienwirtz/homer:v25.03.1
