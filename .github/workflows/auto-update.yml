@@ -1,0 +1,69 @@
+name: Auto Update
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+      - 'src/Dockerfile'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-update:
+    name: Update Process
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Process Dependabot Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Approve and merge Dependabot PR automatically
+          gh pr review ${{ github.event.pull_request.html_url }} --approve
+          gh pr edit ${{ github.event.pull_request.html_url }} --add-label auto-merged
+          
+          for i in {1..5}; do
+            gh pr merge ${{ github.event.pull_request.html_url }} --rebase && break || sleep 10
+          done
+
+      - name: Get Dependency Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+
+      - name: Checkout Repository
+        if: steps.metadata.outputs.package-ecosystem == 'docker'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Update Version and Changelog
+        if: steps.metadata.outputs.package-ecosystem == 'docker'
+        run: |
+          # Extract package info from Dependabot metadata
+          PACKAGE_NAME="${{ steps.metadata.outputs.dependency-names }}"
+          NEW_VERSION="${{ steps.metadata.outputs.new-version }}"
+          DIRECTORY=".${{ steps.metadata.outputs.directory }}"
+          
+          # Update files with new version
+          sed -i "s/version: .*/version: $NEW_VERSION/" "$DIRECTORY/config.yaml"
+          
+          # Prepare changelog entry
+          NEW_ENTRY="## $NEW_VERSION\n- Update $PACKAGE_NAME to $NEW_VERSION\n"
+
+          # Prepend new changelog entry
+          echo -e "$NEW_ENTRY$(cat $DIRECTORY/CHANGELOG.md)" > "$DIRECTORY/CHANGELOG.md"
+          
+          # Configure git and commit changes
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$DIRECTORY/config.yaml" "$DIRECTORY/CHANGELOG.md"
+          git commit -m "Bump version to $NEW_VERSION"
+          
+          for i in {1..5}; do
+            git pull origin main --rebase && git push && break || sleep 10
+          done
