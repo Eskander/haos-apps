@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - '.github/workflows/**'
-      - 'src/Dockerfile'
+      - '**/Dockerfile'
 
 permissions:
   contents: write
@@ -54,7 +54,7 @@ jobs:
           
           # Prepare changelog entry
           NEW_ENTRY="## $NEW_VERSION\n- Update $PACKAGE_NAME to $NEW_VERSION\n"
-
+          
           # Prepend new changelog entry
           echo -e "$NEW_ENTRY$(cat $DIRECTORY/CHANGELOG.md)" > "$DIRECTORY/CHANGELOG.md"
 
@@ -62,11 +62,15 @@ jobs:
         if: steps.metadata.outputs.package-ecosystem == 'docker'
         uses: frenck/action-addon-linter@v2
         with:
-          path: ./src
+          path: .${{ steps.metadata.outputs.directory }}
 
       - name: Commit Changes
         if: steps.metadata.outputs.package-ecosystem == 'docker'
         run: |
+          # Extract package info from Dependabot metadata
+          NEW_VERSION="${{ steps.metadata.outputs.new-version }}"
+          DIRECTORY=".${{ steps.metadata.outputs.directory }}"
+          
           # Configure git and commit changes
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
