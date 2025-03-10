@@ -1,3 +1,5 @@
+## v25.03.2
+- Update bastienwirtz/homer to v25.03.2
 ## v25.03.1
 - Update bastienwirtz/homer to v25.03.1
 - Drop custom package, switch to upstream container
