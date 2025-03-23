@@ -1,8 +1,10 @@
 name: Homer
-version: v25.03.2
+version: "1.16"
 slug: homer
 description: A very simple static homepage for your server
 url: https://github.com/Eskander/ha-addon-homer
+image: ghcr.io/eskander/ha-addon-homer
+codenotary: mail@eskander.tn
 arch:
   - amd64
   - aarch64
@@ -11,10 +13,13 @@ init: false
 ingress: true
 ingress_port: 8080
 panel_icon: mdi:server
+options:
+  connectivity_check: false
+schema:
+  connectivity_check: bool
 ports:
   8080/tcp: null
 map:
   - type: addon_config
     path: /www/assets
     read_only: false
-image: ghcr.io/bastienwirtz/homer
