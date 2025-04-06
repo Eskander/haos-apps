@@ -1,11 +1,3 @@
-## v25.03.3
-- Update bastienwirtz/homer to v25.03.3
-## v25.03.2
-- Update bastienwirtz/homer to v25.03.2
-## v25.03.1
-- Update bastienwirtz/homer to v25.03.1
-- Drop custom package, switch to upstream container
-- Drop connectivityCheck config, no longer needed
 ## 1.16
 - Update bastienwirtz/homer to v25.02.1
 ## 1.15
