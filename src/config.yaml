@@ -8,7 +8,6 @@ codenotary: mail@eskander.tn
 arch:
   - amd64
   - aarch64
-  - armv7
 init: false
 ingress: true
 ingress_port: 8080
