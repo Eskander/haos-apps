@@ -93,7 +93,7 @@ jobs:
       - name: Configure QEMU for Multi-arch Support
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -116,7 +116,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: ./src
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
           push: true
           provenance: false
           cache-from: type=gha
@@ -130,7 +130,7 @@ jobs:
             io.hass.description=${{ github.event.repository.description }}
             io.hass.url=https://github.com/${{ github.repository }}
             io.hass.type=addon
-            io.hass.arch=amd64|aarch64|armhf
+            io.hass.arch=amd64|aarch64
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.version=${{ env.ADDON_VERSION }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
