@@ -49,7 +49,7 @@ jobs:
           echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
 
