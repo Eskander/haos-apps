@@ -1,5 +1,7 @@
 ## 1.20
 - Update bastienwirtz/homer to v25.08.1
+- Remove connectivity_check workaround
+- Drop ARMv7 support
 ## 1.19
 - Update bastienwirtz/homer to v25.05.2
 ## 1.18
