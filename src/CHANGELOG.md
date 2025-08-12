@@ -1,3 +1,5 @@
+## 1.20
+- Update bastienwirtz/homer to v25.08.1
 ## 1.19
 - Update bastienwirtz/homer to v25.05.2
 ## 1.18
