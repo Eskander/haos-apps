@@ -176,7 +176,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=semver,pattern={{major}}.{{minor}},value=${{ env.ADDON_VERSION }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.ADDON_VERSION }}.0
           labels: |
             io.hass.name=${{ github.event.repository.name }}
             io.hass.version=${{ env.ADDON_VERSION }}
@@ -186,9 +186,6 @@ jobs:
             io.hass.url=https://github.com/${{ github.repository }}
           annotations: |
             org.opencontainers.image.authors=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
-            org.opencontainers.image.vendor=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
-            # org.opencontainers.image.licenses=MIT
-            # org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
 
       - name: Build and Push Multi-arch Image
         uses: docker/build-push-action@v6
