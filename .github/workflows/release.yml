@@ -168,10 +168,27 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate Image Name
-        run: |
-          # Convert repository name to lowercase for Docker compatibility
-          echo IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Prepare Image Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.ADDON_VERSION }}
+          labels: |
+            io.hass.name=${{ github.event.repository.name }}
+            io.hass.version=${{ env.ADDON_VERSION }}
+            io.hass.description=${{ github.event.repository.description }}
+            io.hass.type=addon
+            io.hass.arch=amd64|aarch64
+            io.hass.url=https://github.com/${{ github.repository }}
+          annotations: |
+            org.opencontainers.image.authors=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
+            org.opencontainers.image.vendor=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
+            # org.opencontainers.image.licenses=MIT
+            # org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
 
       - name: Build and Push Multi-arch Image
         uses: docker/build-push-action@v6
@@ -184,25 +201,6 @@ jobs:
           provenance: false
           cache-from: type=gha,scope=buildcache
           cache-to: type=gha,mode=max,scope=buildcache
-          tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ env.ADDON_VERSION }}
-          labels: |
-            io.hass.name=${{ github.event.repository.name }}
-            io.hass.version=${{ env.ADDON_VERSION }}
-            io.hass.description=${{ github.event.repository.description }}
-            io.hass.url=https://github.com/${{ github.repository }}
-            io.hass.type=addon
-            io.hass.arch=amd64|aarch64
-          annotations: |
-            org.opencontainers.image.title=${{ github.event.repository.name }}
-            org.opencontainers.image.version=${{ env.ADDON_VERSION }}
-            org.opencontainers.image.description=${{ github.event.repository.description }}
-            org.opencontainers.image.authors=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
-            org.opencontainers.image.vendor=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
-            org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.created=${{ github.event.repository.pushed_at }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.url=https://github.com/${{ github.repository }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
