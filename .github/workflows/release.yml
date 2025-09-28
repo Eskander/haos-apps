@@ -102,6 +102,7 @@ jobs:
         uses: docker/build-push-action@v6
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
+          DOCKER_BUILD_SUMMARY: false
         with:
           context: ./src
           platforms: linux/amd64
