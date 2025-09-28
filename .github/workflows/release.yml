@@ -100,12 +100,14 @@ jobs:
 
       - name: Build Test Image
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: ./src
           platforms: linux/amd64
           load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=buildcache
+          cache-to: type=gha,mode=max,scope=buildcache
           tags: test-image:latest
 
       - name: Test Container Health
@@ -180,8 +182,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           provenance: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=buildcache
+          cache-to: type=gha,mode=max,scope=buildcache
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ env.ADDON_VERSION }}
