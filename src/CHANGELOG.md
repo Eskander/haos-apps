@@ -1,3 +1,5 @@
+## 1.21
+- Update bastienwirtz/homer to v25.09.1
 ## 1.20
 - Update bastienwirtz/homer to v25.08.1
 - Remove connectivity_check workaround
