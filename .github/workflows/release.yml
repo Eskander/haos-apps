@@ -110,6 +110,67 @@ jobs:
           # Convert repository name to lowercase for Docker compatibility
           echo IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: Build Test Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./src
+          platforms: linux/amd64
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: test-image:latest
+
+      - name: Test Container Health
+        run: |
+          # Start container in detached mode
+          CONTAINER_ID=$(docker run --detach --name test-container test-image:latest)
+          echo "Started container: $CONTAINER_ID"
+          
+          # Wait for container to start and run health checks
+          echo "Waiting for container to become healthy..."
+          TIMEOUT=120
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' test-container 2>/dev/null || echo "no-healthcheck")
+            
+            if [ "$HEALTH_STATUS" = "healthy" ]; then
+              echo "Container is healthy!"
+              break
+            elif [ "$HEALTH_STATUS" = "unhealthy" ]; then
+              echo "Container health check failed!"
+              docker logs test-container
+              exit 1
+            elif [ "$HEALTH_STATUS" = "no-healthcheck" ]; then
+              # If no healthcheck defined, wait for container to be running for 30 seconds
+              if [ $ELAPSED -ge 30 ]; then
+                STATUS=$(docker inspect --format='{{.State.Status}}' test-container)
+                if [ "$STATUS" = "running" ]; then
+                  echo "Container is running (no healthcheck defined)"
+                  break
+                else
+                  echo "Container is not running!"
+                  docker logs test-container
+                  exit 1
+                fi
+              fi
+            fi
+            
+            echo "Health status: $HEALTH_STATUS (elapsed: ${ELAPSED}s)"
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+          done
+          
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "Timeout waiting for container to become healthy"
+            docker logs test-container
+            exit 1
+          fi
+          
+          # Cleanup test container
+          docker stop test-container
+          docker rm test-container
+
       - name: Build and Push Multi-arch Image
         uses: docker/build-push-action@v6
         env:
