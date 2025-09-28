@@ -194,6 +194,7 @@ jobs:
             io.hass.url=https://github.com/${{ github.repository }}
             io.hass.type=addon
             io.hass.arch=amd64|aarch64
+          annotations: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.version=${{ env.ADDON_VERSION }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
