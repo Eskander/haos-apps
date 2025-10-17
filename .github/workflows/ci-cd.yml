@@ -1,0 +1,257 @@
+name: CI/CD
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+
+jobs:
+  ci:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Validate Add-on Configuration
+        uses: frenck/action-addon-linter@v2
+        with:
+          path: ./src
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Test Image
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+          DOCKER_BUILD_SUMMARY: false
+        with:
+          context: ./src
+          platforms: linux/amd64
+          load: true
+          cache-from: type=gha,scope=buildcache
+          cache-to: type=gha,mode=max,scope=buildcache
+          tags: test-image:latest
+
+      - name: Test Container Health
+        run: |
+          # Start container in detached mode
+          CONTAINER_ID=$(docker run --detach --name test-container test-image:latest)
+          echo "Started container: $CONTAINER_ID"
+          
+          # Wait for container to start and run health checks
+          echo "Waiting for container to become healthy..."
+          TIMEOUT=120
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' test-container 2>/dev/null || echo "no-healthcheck")
+            
+            if [ "$HEALTH_STATUS" = "healthy" ]; then
+              echo "Container is healthy!"
+              break
+            elif [ "$HEALTH_STATUS" = "unhealthy" ]; then
+              echo "Container health check failed!"
+              docker logs test-container
+              exit 1
+            elif [ "$HEALTH_STATUS" = "no-healthcheck" ]; then
+              # If no healthcheck defined, wait for container to be running for 30 seconds
+              if [ $ELAPSED -ge 30 ]; then
+                STATUS=$(docker inspect --format='{{.State.Status}}' test-container)
+                if [ "$STATUS" = "running" ]; then
+                  echo "Container is running (no healthcheck defined)"
+                  break
+                else
+                  echo "Container is not running!"
+                  docker logs test-container
+                  exit 1
+                fi
+              fi
+            fi
+            
+            echo "Health status: $HEALTH_STATUS (elapsed: ${ELAPSED}s)"
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+          done
+          
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "Timeout waiting for container to become healthy"
+            docker logs test-container
+            exit 1
+          fi
+          
+          # Cleanup test container
+          docker stop test-container
+          docker rm test-container
+
+  dependabot:
+    name: Dependabot Automation
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.actor == 'dependabot[bot]'
+    outputs:
+      base: ${{ steps.metadata.outputs.dependency-names }}
+      version: ${{ steps.metadata.outputs.new-version || env.BASE_VERSION }}
+      deploy: ${{ steps.metadata.outputs.package-ecosystem == 'docker' }}
+    steps:
+
+      - name: Get Dependency Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+
+      - name: Determine Base Package Version
+        if: steps.metadata.outputs.package-ecosystem == 'docker'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          
+          # Try to get base version from metadata, fallback to API if not available
+          BASE_VERSION="${{ steps.metadata.outputs.new-version }}"
+          
+          if [ -z "$BASE_VERSION" ]; then
+            BASE_VERSION=$(gh api repos/${{ steps.metadata.outputs.dependency-names }}/releases/latest --jq .tag_name)
+          fi
+          
+          if [ -z "$BASE_VERSION" ]; then
+            echo "Failed to determine base package version"
+            exit 1
+          fi
+          
+          echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
+
+      - name: Merge Dependabot Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Approve and merge Dependabot PR after all checks pass
+          gh pr review ${{ github.event.pull_request.html_url }} --approve
+          gh pr edit ${{ github.event.pull_request.html_url }} --add-label auto
+          
+          for i in {1..5}; do
+            gh pr merge ${{ github.event.pull_request.html_url }} --rebase && break || sleep 10
+          done
+
+  cd:
+    name: Continuous Deployment
+    runs-on: ubuntu-latest
+    needs: [ci, dependabot]
+    if: |
+      always() &&
+      needs.ci.result == 'success' &&
+      (needs.dependabot.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch')
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Update Version and Changelog
+        run: |
+          set -e
+          
+          # Get current addon version from config
+          CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/')
+          
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "Failed to read current version from config"
+            exit 1
+          fi
+          
+          # Calculate new addon version (minor bump)
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          ADDON_VERSION="$MAJOR.$((MINOR + 1))"
+          echo "ADDON_VERSION=$ADDON_VERSION" >> $GITHUB_ENV
+          
+          # Update addon version in config
+          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
+          
+          # Verify version was updated
+          if ! grep -q "$ADDON_VERSION" src/config.yaml; then
+            echo "Failed to update config.yaml"
+            exit 1
+          fi
+          
+          # Prepare changelog entry based on trigger type
+          if [ -n "${{ needs.dependabot.outputs.version }}" ]; then
+            NEW_ENTRY="## $ADDON_VERSION\n- Update ${{ needs.dependabot.outputs.base }} to ${{ needs.dependabot.outputs.version }}\n"
+          else
+            NEW_ENTRY="## $ADDON_VERSION\n- TODO\n"
+          fi
+          
+          # Prepend new changelog entry
+          echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
+          
+          # Verify changelog was updated
+          if ! grep -q "$ADDON_VERSION" src/CHANGELOG.md; then
+            echo "Failed to update CHANGELOG.md"
+            exit 1
+          fi
+
+      - name: Configure QEMU for Multi-arch Support
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate with GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare Image Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.ADDON_VERSION }}.0
+          labels: |
+            io.hass.name=${{ github.event.repository.name }}
+            io.hass.version=${{ env.ADDON_VERSION }}
+            io.hass.description=${{ github.event.repository.description }}
+            io.hass.type=addon
+            io.hass.arch=amd64|aarch64
+            io.hass.url=https://github.com/${{ github.repository }}
+          annotations: |
+            org.opencontainers.image.authors=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
+
+      - name: Build and Push Multi-arch Image
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: ./src
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: false
+          cache-from: type=gha,scope=buildcache
+          cache-to: type=gha,mode=max,scope=buildcache
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+
+      - name: Publish Update
+        run: |
+          # Configure git and commit changes
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/config.yaml src/CHANGELOG.md
+          git commit -m "Bump addon version to ${{ env.ADDON_VERSION }}"
+          git push
