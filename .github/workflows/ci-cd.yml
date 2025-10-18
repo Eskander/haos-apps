@@ -4,7 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       addon:
-        description: 'Addon to deploy'
+        description: Addon to deploy
+        required: true
+        type: string
+      version:
+        description: Version
         required: true
         type: string
   pull_request:
@@ -22,13 +26,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ADDON_ID: ''
-      ADDON_VERSION: ''
+      VERSION: ''
       BASE_NAME: ''
-      BASE_VERSION: ''
     outputs:
       ADDON_ID: ${{ env.ADDON_ID }}
-      ADDON_VERSION: ${{ env.ADDON_VERSION }}
-      VERSION_PATCH: ${{ steps.version.outputs.VERSION_PATCH }}
+      VERSION: ${{ env.VERSION }}
+      BASE_NAME: ${{ env.BASE_NAME }}
     steps:
 
       - name: Checkout Repository
@@ -38,28 +41,6 @@ jobs:
         id: dependabot
         if: github.actor == 'dependabot[bot]'
         uses: dependabot/fetch-metadata@v2
-
-      - name: Determine Base Image Version
-        if: github.actor == 'dependabot[bot]'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          
-          BASE_NAME="${{ steps.dependabot.outputs.dependency-names }}"
-          BASE_VERSION="${{ steps.dependabot.outputs.new-version }}"
-          
-          if [ -z "$BASE_VERSION" ]; then
-            echo "Fetching version from GitHub API..."
-            BASE_VERSION=$(gh api repos/$BASE_NAME/releases/latest --jq .tag_name)
-          fi
-          
-          [ -z "$BASE_VERSION" ] && echo "Error: Failed to determine base image version" && exit 1
-          
-          echo "BASE_NAME=$BASE_NAME" >> $GITHUB_ENV
-          echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
-          
-          echo "==> Base image: $BASE_NAME @ $BASE_VERSION"
 
       - name: Detect Addon
         run: |
@@ -81,46 +62,56 @@ jobs:
           
           echo "==> Detected addon: $ADDON_ID"
 
-      - name: Update Version and Changelog
-        id: version
+      - name: Determine Version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-
-          # Read and bump version
-          CURRENT=$(grep "version:" $ADDON_ID/config.yaml | sed 's/.*: "\(.*\)"/\1/')
-          [ -z "$CURRENT" ] && echo "Error: Failed to read version" && exit 1
           
-          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
-          MINOR=$(echo "$CURRENT" | cut -d. -f2)
-          [ -z "$MAJOR" ] && echo "Error: Failed to parse major version" && exit 1
-          [ -z "$MINOR" ] && echo "Error: Failed to parse minor version" && exit 1
+          VERSION=""
+          BASE_NAME=""
           
-          ADDON_VERSION="$MAJOR.$((MINOR + 1))"
-
-          # Update config
-          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" $ADDON_ID/config.yaml
-
-          # Update changelog
-          if [ -n "$BASE_NAME" ] && [ -n "$BASE_VERSION" ]; then
-            ENTRY="## $ADDON_VERSION\n- Update $BASE_NAME to $BASE_VERSION\n"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual workflow dispatch
+            VERSION="${{ inputs.version }}"
+            [ -z "$VERSION" ] && echo "Error: Version input is empty" && exit 1
+            echo "==> Manual version: $VERSION"
+            
+          elif [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+            # Dependabot PR
+            BASE_NAME="${{ steps.dependabot.outputs.dependency-names }}"
+            VERSION="${{ steps.dependabot.outputs.new-version }}"
+            
+            if [ -z "$VERSION" ]; then
+              echo "Fetching version from GitHub API..."
+              VERSION=$(gh api repos/$BASE_NAME/releases/latest --jq .tag_name)
+            fi
+            
+            [ -z "$VERSION" ] && echo "Error: Failed to determine base image version" && exit 1
+            echo "==> Base image: $BASE_NAME @ $VERSION"
+            
           else
-            ENTRY="## $ADDON_VERSION\n- TODO\n"
+            # Regular PR - no version needed
+            echo "==> Regular PR - no version determination needed"
           fi
-          echo -e "$ENTRY$(cat $ADDON_ID/CHANGELOG.md)" > $ADDON_ID/CHANGELOG.md
-
-          # Create patch
-          git add $ADDON_ID/config.yaml $ADDON_ID/CHANGELOG.md
-          git diff --staged --binary --patch > patch.diff || true
-
-          [ ! -s patch.diff ] && echo "Error: No changes detected for patch" && exit 1
-
-          VERSION_PATCH=$(base64 -w0 patch.diff)
-          [ -z "$VERSION_PATCH" ] && echo "Error: Failed to encode patch" && exit 1
-
-          echo "VERSION_PATCH=$VERSION_PATCH" >> $GITHUB_OUTPUT
-          echo "ADDON_VERSION=$ADDON_VERSION" >> $GITHUB_ENV
           
-          echo "==> Updated $ADDON_ID: $CURRENT -> $ADDON_VERSION"
+          if [ -n "$VERSION" ]; then
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+          fi
+          
+          if [ -n "$BASE_NAME" ]; then
+            echo "BASE_NAME=$BASE_NAME" >> $GITHUB_ENV
+          fi
+
+      - name: Update Config Version for CI
+        if: env.VERSION != ''
+        run: |
+          set -e
+          
+          # Update version in config for CI build
+          sed -i "s/version: .*/version: $VERSION/" $ADDON_ID/config.yaml
+          
+          echo "==> Set $ADDON_ID version to $VERSION for CI"
 
       - name: Lint Addon Configuration
         uses: frenck/action-addon-linter@v2
@@ -193,6 +184,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
+          set -e
+
           gh pr review "$PR_URL" --approve
           gh pr edit "$PR_URL" --add-label auto
 
@@ -206,11 +199,11 @@ jobs:
     name: Continuous Deployment
     runs-on: ubuntu-latest
     needs: [ci]
-    if: github.actor == 'dependabot[bot]' || github.event_name == 'workflow_dispatch'
+    if: needs.ci.outputs.VERSION != ''
     env:
       ADDON_ID: ${{ needs.ci.outputs.ADDON_ID }}
-      ADDON_VERSION: ${{ needs.ci.outputs.ADDON_VERSION }}
-      VERSION_PATCH: ${{ needs.ci.outputs.VERSION_PATCH }}
+      VERSION: ${{ needs.ci.outputs.VERSION }}
+      BASE_NAME: ${{ needs.ci.outputs.BASE_NAME }}
     steps:
 
       - name: Checkout Repository
@@ -218,17 +211,22 @@ jobs:
         with:
           ref: main
 
-      - name: Apply Version Patch
+      - name: Update Version and Changelog
         run: |
           set -e
+
+          # Update config
+          sed -i "s/version: .*/version: $VERSION/" $ADDON_ID/config.yaml
+
+          # Update changelog
+          if [ -n "$BASE_NAME" ]; then
+            ENTRY="## $VERSION\n- Update $BASE_NAME to $VERSION\n"
+          else
+            ENTRY="## $VERSION\n- TODO\n"
+          fi
+          echo -e "$ENTRY$(cat $ADDON_ID/CHANGELOG.md)" > $ADDON_ID/CHANGELOG.md
           
-          [ -z "$ADDON_ID" ] && echo "Error: ADDON_ID is empty" && exit 1
-          [ -z "$ADDON_VERSION" ] && echo "Error: ADDON_VERSION is empty" && exit 1
-          [ -z "$VERSION_PATCH" ] && echo "Error: VERSION_PATCH is empty" && exit 1
-          
-          echo "$VERSION_PATCH" | base64 -d | git apply --index
-          
-          echo "==> Applied version patch for $ADDON_ID"
+          echo "==> Updated $ADDON_ID version and changelog to $VERSION"
 
       - name: Configure QEMU
         uses: docker/setup-qemu-action@v3
@@ -253,10 +251,10 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/ha-addon-${{ env.ADDON_ID }}
           tags: |
-            type=semver,pattern={{major}}.{{minor}},value=${{ env.ADDON_VERSION }}.0
+            type=semver,pattern={{version}},value=${{ env.VERSION }}
           labels: |
             io.hass.name=${{ github.event.repository.name }}
-            io.hass.version=${{ env.ADDON_VERSION }}
+            io.hass.version=${{ env.VERSION }}
             io.hass.description=${{ github.event.repository.description }}
             io.hass.type=addon
             io.hass.arch=amd64|aarch64
@@ -287,7 +285,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           git add $ADDON_ID/config.yaml $ADDON_ID/CHANGELOG.md
-          git commit -m "[$ADDON_ID] Bump version to $ADDON_VERSION"
+          git commit -m "[$ADDON_ID] Bump version to $VERSION"
           git push
           
-          echo "==> Published $ADDON_ID v$ADDON_VERSION"
+          echo "==> Published $ADDON_ID v$VERSION"
