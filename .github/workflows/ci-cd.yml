@@ -266,11 +266,11 @@ jobs:
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
         with:
-          images: ghcr.io/${{ github.repository_owner }}/ha-addon-${{ env.ADDON_ID }}
+          images: ghcr.io/${{ github.repository_owner }}/haos-${{ env.ADDON_ID }}
           tags: |
             type=semver,pattern={{version}},value=${{ env.VERSION }}
           labels: |
-            io.hass.name=${{ github.event.repository.name }}
+            io.hass.name=${{ env.ADDON_ID }}
             io.hass.version=${{ env.VERSION }}
             io.hass.description=${{ github.event.repository.description }}
             io.hass.type=addon
@@ -306,4 +306,4 @@ jobs:
           git commit -m "[$ADDON_ID] Bump version to $VERSION"
           git push
           
-          echo "==> Published $ADDON_ID v$VERSION"
+          echo "==> Published $ADDON_ID $VERSION"
