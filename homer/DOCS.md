@@ -6,7 +6,7 @@ To add Homer Dashboard to the Home Assistant sidebar, enable the "**Show in side
 You can also access the web interface at `homeassistant.local:port` by setting a **port** in the **Configuration** tab.  
 
 ## Configuration  
-The configuration directory is located at `/addon_configs/2243a3f0_homer/`.  
+The configuration directory is located at `/addon_configs/ec6f6e63_homer/`.  
 
 For configuration options, refer to the [Homer documentation](https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md).  
 

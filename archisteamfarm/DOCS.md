@@ -6,7 +6,7 @@ To add ArchiSteamFarm to the Home Assistant sidebar, enable the "**Show in sideb
 You can also access the web interface at `homeassistant.local:port` by setting a **port** in the **Configuration** tab.  
 
 ## Configuration  
-The configuration directory is located at `/addon_configs/bccc8195_archisteamfarm`.  
+The configuration directory is located at `/addon_configs/ec6f6e63_archisteamfarm`.  
 
 For available configuration options, refer to the [ASF wiki](https://github.com/JustArchiNET/ArchiSteamFarm/wiki).  
 
