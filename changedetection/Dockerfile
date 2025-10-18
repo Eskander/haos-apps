@@ -1,1 +1,1 @@
-FROM ghcr.io/bastienwirtz/homer:v25.10.1
+FROM ghcr.io/dgtlmoon/changedetection.io:0.50.25
