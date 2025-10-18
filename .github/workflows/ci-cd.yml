@@ -109,7 +109,7 @@ jobs:
           set -e
           
           # Update version in config for CI build
-          sed -i "s/version: .*/version: $VERSION/" $ADDON_ID/config.yaml
+          yq -iy ".version = \"$VERSION\"" $ADDON_ID/config.yaml
           
           echo "==> Set $ADDON_ID version to $VERSION for CI"
 
@@ -215,8 +215,8 @@ jobs:
         run: |
           set -e
 
-          # Update config
-          sed -i "s/version: .*/version: $VERSION/" $ADDON_ID/config.yaml
+          # Update config version
+          yq -iy ".version = \"$VERSION\"" $ADDON_ID/config.yaml
 
           # Update changelog
           if [ -n "$BASE_NAME" ]; then
@@ -228,15 +228,31 @@ jobs:
           
           echo "==> Updated $ADDON_ID version and changelog to $VERSION"
 
+      - name: Check if Image Should Be Built
+        run: |
+          IMAGE=$(yq '.image' $ADDON_ID/config.yaml)
+          EXPECTED_REPO="$(echo ghcr.io/${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')"
+          
+          if [[ "$IMAGE" == *"$EXPECTED_REPO"* ]]; then
+            echo "SHOULD_BUILD=true" >> $GITHUB_ENV
+            echo "==> Image contains '$EXPECTED_REPO' - will build and push"
+          else
+            echo "SHOULD_BUILD=false" >> $GITHUB_ENV
+            echo "==> Image does not contain '$EXPECTED_REPO' - skipping build and push"
+          fi
+
       - name: Configure QEMU
+        if: env.SHOULD_BUILD == 'true'
         uses: docker/setup-qemu-action@v3
         with:
           platforms: linux/amd64,linux/arm64
 
       - name: Setup Docker Buildx
+        if: env.SHOULD_BUILD == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
+        if: env.SHOULD_BUILD == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -244,6 +260,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare Image Metadata
+        if: env.SHOULD_BUILD == 'true'
         id: meta
         uses: docker/metadata-action@v5
         env:
@@ -263,6 +280,7 @@ jobs:
             org.opencontainers.image.authors=${{ github.repository_owner }} <github.com/${{ github.repository_owner }}>
 
       - name: Build and Push Multi-Arch Image
+        if: env.SHOULD_BUILD == 'true'
         uses: docker/build-push-action@v6
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
