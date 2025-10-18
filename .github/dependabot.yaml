@@ -5,6 +5,7 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: docker
-    directory: /src
+    directories:
+      - "**/*"
     schedule:
       interval: weekly
