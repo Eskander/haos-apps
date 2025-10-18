@@ -15,10 +15,90 @@ jobs:
   ci:
     name: Continuous Integration
     runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.metadata.outputs.dependency-names }}
+      version: ${{ steps.metadata.outputs.new-version || env.BASE_VERSION }}
+      deploy: ${{ steps.metadata.outputs.package-ecosystem == 'docker' || github.event_name == 'workflow_dispatch' }}
+      addon_version: ${{ steps.prepare-version.outputs.addon_version }}
+      patch: ${{ steps.prepare-version.outputs.patch }}
     steps:
 
       - name: Checkout Repository
         uses: actions/checkout@v5
+
+      - name: Get Dependency Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+
+      - name: Determine Base Package Version
+        id: determine-base-version
+        if: steps.metadata.outputs.package-ecosystem == 'docker'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          # Try to get base version from metadata, fallback to API if not available
+          BASE_VERSION="${{ steps.metadata.outputs.new-version }}"
+
+          if [ -z "$BASE_VERSION" ]; then
+            BASE_VERSION=$(gh api repos/${{ steps.metadata.outputs.dependency-names }}/releases/latest --jq .tag_name)
+          fi
+
+          if [ -z "$BASE_VERSION" ]; then
+            echo "Failed to determine base package version"
+            exit 1
+          fi
+
+          echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
+
+      - name: Prepare Version and Changelog (produce patch)
+        id: prepare-version
+        run: |
+          set -e
+
+          # Read current addon version
+          CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/' || true)
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "Failed to read current version from config"
+            exit 1
+          fi
+
+          # Calculate new addon version (minor bump)
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          ADDON_VERSION="$MAJOR.$((MINOR + 1))"
+
+          # Determine dependency metadata for changelog entry
+          DEP_BASE="${{ steps.metadata.outputs.dependency-names }}"
+          DEP_VER="${{ steps.metadata.outputs.new-version }}"
+          if [ -z "$DEP_VER" ]; then
+            DEP_VER="$BASE_VERSION"
+          fi
+
+          # Update addon version in config
+          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
+
+          # Prepend changelog entry
+          if [ -n "$DEP_BASE" ] && [ -n "$DEP_VER" ]; then
+            NEW_ENTRY="## $ADDON_VERSION\n- Update $DEP_BASE to $DEP_VER\n"
+          else
+            NEW_ENTRY="## $ADDON_VERSION\n- TODO\n"
+          fi
+          echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
+
+          # Stage changes and create a patch (do not commit)
+          git add src/config.yaml src/CHANGELOG.md
+          git diff --staged --binary --patch > patch.diff || true
+
+          # Encode patch for transport as output
+          if [ -s patch.diff ]; then
+            base64 -w0 patch.diff > patch.b64
+            echo "patch=$(cat patch.b64)" >> $GITHUB_OUTPUT
+          else
+            echo "patch=" >> $GITHUB_OUTPUT
+          fi
+
+          echo "addon_version=$ADDON_VERSION" >> $GITHUB_OUTPUT
 
       - name: Validate Add-on Configuration
         uses: frenck/action-addon-linter@v2
@@ -92,50 +172,15 @@ jobs:
           docker stop test-container
           docker rm test-container
 
-  dependabot:
-    name: Dependabot Automation
-    runs-on: ubuntu-latest
-    needs: ci
-    if: github.actor == 'dependabot[bot]'
-    outputs:
-      base: ${{ steps.metadata.outputs.dependency-names }}
-      version: ${{ steps.metadata.outputs.new-version || env.BASE_VERSION }}
-      deploy: ${{ steps.metadata.outputs.package-ecosystem == 'docker' }}
-    steps:
-
-      - name: Get Dependency Metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v2
-
-      - name: Determine Base Package Version
-        if: steps.metadata.outputs.package-ecosystem == 'docker'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          
-          # Try to get base version from metadata, fallback to API if not available
-          BASE_VERSION="${{ steps.metadata.outputs.new-version }}"
-          
-          if [ -z "$BASE_VERSION" ]; then
-            BASE_VERSION=$(gh api repos/${{ steps.metadata.outputs.dependency-names }}/releases/latest --jq .tag_name)
-          fi
-          
-          if [ -z "$BASE_VERSION" ]; then
-            echo "Failed to determine base package version"
-            exit 1
-          fi
-          
-          echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
-
       - name: Merge Dependabot Pull Request
+        if: github.actor == 'dependabot[bot]'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Approve and merge Dependabot PR after all checks pass
           gh pr review ${{ github.event.pull_request.html_url }} --approve
           gh pr edit ${{ github.event.pull_request.html_url }} --add-label auto
-          
+
           for i in {1..5}; do
             gh pr merge ${{ github.event.pull_request.html_url }} --rebase && break || sleep 10
           done
@@ -143,11 +188,8 @@ jobs:
   cd:
     name: Continuous Deployment
     runs-on: ubuntu-latest
-    needs: [ci, dependabot]
-    if: |
-      always() &&
-      needs.ci.result == 'success' &&
-      (needs.dependabot.outputs.deploy == 'true' || github.event_name == 'workflow_dispatch')
+    needs: [ci]
+    if: github.actor == 'dependabot[bot]' || github.event_name == 'workflow_dispatch'
     steps:
 
       - name: Checkout Repository
@@ -155,48 +197,22 @@ jobs:
         with:
           ref: main
 
-      - name: Update Version and Changelog
+      - name: Apply Version Patch from CI
+        if: needs.ci.outputs.patch != ''
         run: |
           set -e
-          
-          # Get current addon version from config
-          CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/')
-          
-          if [ -z "$CURRENT_VERSION" ]; then
-            echo "Failed to read current version from config"
-            exit 1
-          fi
-          
-          # Calculate new addon version (minor bump)
-          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
-          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
-          ADDON_VERSION="$MAJOR.$((MINOR + 1))"
-          echo "ADDON_VERSION=$ADDON_VERSION" >> $GITHUB_ENV
-          
-          # Update addon version in config
-          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
-          
-          # Verify version was updated
-          if ! grep -q "$ADDON_VERSION" src/config.yaml; then
-            echo "Failed to update config.yaml"
-            exit 1
-          fi
-          
-          # Prepare changelog entry based on trigger type
-          if [ -n "${{ needs.dependabot.outputs.version }}" ]; then
-            NEW_ENTRY="## $ADDON_VERSION\n- Update ${{ needs.dependabot.outputs.base }} to ${{ needs.dependabot.outputs.version }}\n"
+
+          # Decode and apply patch produced by CI
+          echo "Applying version patch from CI"
+          echo "${{ needs.ci.outputs.patch }}" | base64 -d > patch.diff
+          if [ -s patch.diff ]; then
+            git apply --index patch.diff
           else
-            NEW_ENTRY="## $ADDON_VERSION\n- TODO\n"
+            echo "No patch to apply"
           fi
-          
-          # Prepend new changelog entry
-          echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
-          
-          # Verify changelog was updated
-          if ! grep -q "$ADDON_VERSION" src/CHANGELOG.md; then
-            echo "Failed to update CHANGELOG.md"
-            exit 1
-          fi
+
+          # Export ADDON_VERSION produced in CI
+          echo "ADDON_VERSION=${{ needs.ci.outputs.addon_version }}" >> $GITHUB_ENV
 
       - name: Configure QEMU for Multi-arch Support
         uses: docker/setup-qemu-action@v3
