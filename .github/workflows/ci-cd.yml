@@ -145,15 +145,17 @@ jobs:
           
           TIMEOUT=120
           INTERVAL=5
+          SUCCESS=false
           
           for ((i=0; i<TIMEOUT; i+=INTERVAL)); do
-            HEALTH=$(docker inspect --format='{{.State.Health.Status}}' test-container 2>/dev/null || echo "none")
+            HEALTH=$(docker inspect --format='{{.State.Health.Status}}' test-container 2>/dev/null || true)
             STATUS=$(docker inspect --format='{{.State.Status}}' test-container)
             
-            echo "[$i s] Status: $STATUS | Health: $HEALTH"
+            echo "[$i s] Status: $STATUS | Health: ${HEALTH:-none}"
             
             if [ "$HEALTH" = "healthy" ]; then
               echo "==> Container health check passed"
+              SUCCESS=true
               break
             elif [ "$HEALTH" = "unhealthy" ]; then
               echo "Error: Health check failed"
@@ -163,15 +165,16 @@ jobs:
               echo "Error: Container stopped unexpectedly"
               docker logs test-container
               exit 1
-            elif [ "$HEALTH" = "none" ] && [ $i -ge 30 ]; then
+            elif [ -z "$HEALTH" ] && [ $i -ge 30 ]; then
               echo "==> Container running (no healthcheck defined)"
+              SUCCESS=true
               break
             fi
             
             sleep $INTERVAL
           done
           
-          if [ $i -ge $TIMEOUT ]; then
+          if [ "$SUCCESS" = "false" ]; then
             echo "Error: Timeout waiting for container"
             docker logs test-container
             exit 1
