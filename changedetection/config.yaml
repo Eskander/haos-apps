@@ -1,5 +1,5 @@
 name: changedetection.io
-version: 0.50.25
+version: 0.50.26
 slug: changedetection
 description: changedetection
 url: https://github.com/Eskander/haos-apps
@@ -15,4 +15,3 @@ map:
   - type: data
     path: /datastore
     read_only: false
-
