@@ -2,6 +2,11 @@ name: CI/CD
 
 on:
   workflow_dispatch:
+    inputs:
+      addon:
+        description: 'Addon to deploy'
+        required: true
+        type: string
   pull_request:
     branches:
       - main
@@ -21,6 +26,7 @@ jobs:
       deploy: ${{ steps.metadata.outputs.package-ecosystem == 'docker' || github.event_name == 'workflow_dispatch' }}
       addon_version: ${{ steps.prepare-version.outputs.addon_version }}
       patch: ${{ steps.prepare-version.outputs.patch }}
+      addon_path: ${{ steps.determine-addon-path.outputs.addon_path }}
     steps:
 
       - name: Checkout Repository
@@ -28,11 +34,12 @@ jobs:
 
       - name: Get Dependency Metadata
         id: metadata
+        if: github.actor == 'dependabot[bot]'
         uses: dependabot/fetch-metadata@v2
 
       - name: Determine Base Package Version
         id: determine-base-version
-        if: steps.metadata.outputs.package-ecosystem == 'docker'
+        if: github.actor == 'dependabot[bot]'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -51,13 +58,48 @@ jobs:
 
           echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
 
-      - name: Prepare Version and Changelog (produce patch)
+      - name: Determine Addon Path
+        id: determine-addon-path
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Use the input from manual trigger
+            ADDON="${{ inputs.addon }}"
+
+          elif [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+            # Extract addon directory from dependabot metadata
+            ADDON=$(echo "${{ steps.metadata.outputs.directory }}" | sed 's:/::g')
+            
+          else
+            # For other PRs, detect changed directories
+            ADDON=$(git diff --name-only HEAD~1 | awk -F/ '!/^\./ {print $1}' | sort -u)
+
+            if [ $(echo "$ADDON" | wc -l) -gt 1 ]; then
+              echo "Error: Only one updated addon per PR is allowed."
+              exit 1
+            fi
+          fi
+
+          if [ -z "$ADDON" ]; then
+            echo "Error: No addon changes detected."
+            exit 1
+          fi
+
+          if [ ! -d "$ADDON" ]; then
+            echo "Error: Addon '$ADDON' does not exist."
+            exit 1
+          fi
+          
+          echo "Building addon: $ADDON"
+          echo "ADDON_PATH=$ADDON" >> $GITHUB_ENV
+          echo "addon_path=$ADDON" >> $GITHUB_OUTPUT
+
+      - name: Prepare Version and Changelog
         id: prepare-version
         run: |
           set -e
 
           # Read current addon version
-          CURRENT_VERSION=$(grep "version:" src/config.yaml | sed 's/.*: "\(.*\)"/\1/' || true)
+          CURRENT_VERSION=$(grep "version:" $ADDON_PATH/config.yaml | sed 's/.*: "\(.*\)"/\1/' || true)
           if [ -z "$CURRENT_VERSION" ]; then
             echo "Failed to read current version from config"
             exit 1
@@ -76,7 +118,7 @@ jobs:
           fi
 
           # Update addon version in config
-          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" src/config.yaml
+          sed -i "s/version: .*/version: \"$ADDON_VERSION\"/" $ADDON_PATH/config.yaml
 
           # Prepend changelog entry
           if [ -n "$DEP_BASE" ] && [ -n "$DEP_VER" ]; then
@@ -84,10 +126,10 @@ jobs:
           else
             NEW_ENTRY="## $ADDON_VERSION\n- TODO\n"
           fi
-          echo -e "$NEW_ENTRY$(cat src/CHANGELOG.md)" > src/CHANGELOG.md
+          echo -e "$NEW_ENTRY$(cat $ADDON_PATH/CHANGELOG.md)" > $ADDON_PATH/CHANGELOG.md
 
           # Stage changes and create a patch (do not commit)
-          git add src/config.yaml src/CHANGELOG.md
+          git add $ADDON_PATH/config.yaml $ADDON_PATH/CHANGELOG.md
           git diff --staged --binary --patch > patch.diff || true
 
           # Encode patch for transport as output
@@ -103,7 +145,7 @@ jobs:
       - name: Validate Add-on Configuration
         uses: frenck/action-addon-linter@v2
         with:
-          path: ./src
+          path: ./${{ env.ADDON_PATH }}
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -114,7 +156,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
           DOCKER_BUILD_SUMMARY: false
         with:
-          context: ./src
+          context: ./${{ env.ADDON_PATH }}
           platforms: linux/amd64
           load: true
           cache-from: type=gha,scope=buildcache
@@ -198,7 +240,6 @@ jobs:
           ref: main
 
       - name: Apply Version Patch from CI
-        if: needs.ci.outputs.patch != ''
         run: |
           set -e
 
@@ -235,7 +276,7 @@ jobs:
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository_owner }}/ha-addon-${{ needs.ci.outputs.addon_path }}
           tags: |
             type=semver,pattern={{major}}.{{minor}},value=${{ env.ADDON_VERSION }}.0
           labels: |
@@ -253,7 +294,7 @@ jobs:
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
-          context: ./src
+          context: ./${{ needs.ci.outputs.addon_path }}
           platforms: linux/amd64,linux/arm64
           push: true
           provenance: false
@@ -268,6 +309,6 @@ jobs:
           # Configure git and commit changes
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/config.yaml src/CHANGELOG.md
+          git add ${{ needs.ci.outputs.addon_path }}/config.yaml ${{ needs.ci.outputs.addon_path }}/CHANGELOG.md
           git commit -m "Bump addon version to ${{ env.ADDON_VERSION }}"
           git push
