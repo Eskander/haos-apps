@@ -111,7 +111,7 @@ jobs:
           set -e
           
           # Update version in config for CI build
-          yq -iy ".version = \"$VERSION\"" $ADDON_ID/config.yaml
+          yq eval -i ".version = \"$VERSION\"" $ADDON_ID/config.yaml
           
           echo "==> Set $ADDON_ID version to $VERSION for CI"
 
@@ -218,7 +218,7 @@ jobs:
           set -e
 
           # Update config version
-          yq -iy ".version = \"$VERSION\"" $ADDON_ID/config.yaml
+          yq eval -i ".version = \"$VERSION\"" $ADDON_ID/config.yaml
 
           # Update changelog
           if [ -n "$BASE_NAME" ]; then
@@ -232,7 +232,7 @@ jobs:
 
       - name: Check if Image Should Be Built
         run: |
-          IMAGE=$(yq '.image' $ADDON_ID/config.yaml)
+          IMAGE=$(yq eval '.image' $ADDON_ID/config.yaml)
           EXPECTED_REPO="$(echo ghcr.io/${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')"
           
           if [[ "$IMAGE" == *"$EXPECTED_REPO"* ]]; then
