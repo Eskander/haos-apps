@@ -1,5 +1,4 @@
 name: CI/CD
-run-name: "CI/CD: ${{ needs.ci.outputs.ADDON_ID }} - ${{ needs.ci.outputs.ADDON_VERSION }}"
 
 on:
   workflow_dispatch:
