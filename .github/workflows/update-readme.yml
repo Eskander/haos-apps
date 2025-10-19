@@ -1,0 +1,124 @@
+name: Update main README.md
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '*/README.md'
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate README content
+        id: generate
+        run: |
+          # Initialize the content variable
+          CONTENT=""
+          
+          # Find all addon directories (directories containing config.yaml)
+          for dir in */; do
+            # Remove trailing slash
+            addon_dir="${dir%/}"
+            
+            # Skip .git and .github directories
+            if [[ "$addon_dir" == ".git" || "$addon_dir" == ".github" ]]; then
+              continue
+            fi
+            
+            # Check if this is an addon directory (has config.yaml)
+            if [[ ! -f "$addon_dir/config.yaml" ]]; then
+              continue
+            fi
+            
+            # Check if README.md exists
+            if [[ ! -f "$addon_dir/README.md" ]]; then
+              continue
+            fi
+            
+            echo "Processing addon: $addon_dir"
+            
+            # Add separator if not first addon
+            if [[ -n "$CONTENT" ]]; then
+              CONTENT="${CONTENT}\n\n---\n\n"
+            fi
+            
+            # Extract content from README.md until "## Documentation"
+            # Use awk to extract content from start until the first occurrence of "## Documentation"
+            addon_content=$(awk '/^## Documentation/ {exit} {print}' "$addon_dir/README.md" | sed -e :a -e '/^\s*$/d;N;/\n$/ba')
+            
+            # Wrap screenshot in collapsible section if it exists
+            # Look for lines containing ![Screenshot]
+            if echo "$addon_content" | grep -q '!\[Screenshot\]'; then
+              # Use sed to wrap the screenshot line in collapsible details tags
+              addon_content=$(echo "$addon_content" | sed '/!\[Screenshot\]/s|.*|<details>\n<summary>Screenshot</summary>\n\n&\n\n</details>|')
+            fi
+            
+            # Append addon content
+            CONTENT="${CONTENT}${addon_content}"
+          done
+          
+          # Save content to a temporary file
+          echo -e "$CONTENT" > /tmp/addon_content.txt
+          
+          echo "Generated content saved to /tmp/addon_content.txt"
+
+      - name: Update main README
+        run: |
+          # Read the generated content
+          ADDON_CONTENT=$(cat /tmp/addon_content.txt)
+          
+          # Create the new README with updated auto-generated section
+          awk -v content="$ADDON_CONTENT" '
+            BEGIN { in_auto = 0; printed = 0 }
+            /<!-- Begin Auto Generated -->/ {
+              print $0
+              print ""
+              print content
+              print ""
+              in_auto = 1
+              printed = 1
+              next
+            }
+            /<!-- End Auto Generated -->/ {
+              in_auto = 0
+              print $0
+              next
+            }
+            !in_auto { print $0 }
+          ' README.md > README.md.tmp
+          
+          # Replace the original README
+          mv README.md.tmp README.md
+          
+          echo "Main README.md updated successfully"
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet README.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes to commit"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in README.md"
+          fi
+
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add README.md
+          git commit -m "chore: Update main README.md"
+          git push
