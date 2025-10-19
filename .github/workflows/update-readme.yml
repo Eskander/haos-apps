@@ -22,8 +22,10 @@ jobs:
       - name: Generate README content
         id: generate
         run: |
-          # Initialize the content variable
-          CONTENT=""
+          # Clear the temp file if it exists
+          > /tmp/addon_content.txt
+          
+          first_addon=true
           
           # Find all addon directories (directories containing config.yaml)
           for dir in */; do
@@ -48,58 +50,73 @@ jobs:
             echo "Processing addon: $addon_dir"
             
             # Add separator if not first addon
-            if [[ -n "$CONTENT" ]]; then
-              CONTENT="${CONTENT}\n\n---\n\n"
+            if [ "$first_addon" = false ]; then
+              echo "" >> /tmp/addon_content.txt
+              echo "---" >> /tmp/addon_content.txt
+              echo "" >> /tmp/addon_content.txt
             fi
+            first_addon=false
             
             # Extract content from README.md until "## Documentation"
-            # Use awk to extract content from start until the first occurrence of "## Documentation"
-            addon_content=$(awk '/^## Documentation/ {exit} {print}' "$addon_dir/README.md" | sed -e :a -e '/^\s*$/d;N;/\n$/ba')
+            # Write directly to temp file to preserve formatting
+            awk '/^## Documentation/ {exit} {print}' "$addon_dir/README.md" > /tmp/addon_section.txt
             
             # Wrap screenshot in collapsible section if it exists
-            # Look for lines containing ![Screenshot]
-            if echo "$addon_content" | grep -q '!\[Screenshot\]'; then
-              # Use sed to wrap the screenshot line in collapsible details tags
-              addon_content=$(echo "$addon_content" | sed '/!\[Screenshot\]/s|.*|<details>\n<summary>Screenshot</summary>\n\n&\n\n</details>|')
+            if grep -q '!\[Screenshot\]' /tmp/addon_section.txt; then
+              awk '/!\[Screenshot\]/ {
+                print "<details>"
+                print "<summary>Screenshot</summary>"
+                print ""
+                print $0
+                print ""
+                print "</details>"
+                next
+              }
+              {print}' /tmp/addon_section.txt > /tmp/addon_section_wrapped.txt
+              mv /tmp/addon_section_wrapped.txt /tmp/addon_section.txt
             fi
             
-            # Append addon content
-            CONTENT="${CONTENT}${addon_content}"
+            # Append to main content file
+            cat /tmp/addon_section.txt >> /tmp/addon_content.txt
           done
           
-          # Save content to a temporary file
-          echo -e "$CONTENT" > /tmp/addon_content.txt
+          # Remove trailing empty lines from the end
+          awk '{lines[NR] = $0} END {
+            for (i = 1; i <= NR; i++) {
+              if (i == NR) {
+                # Skip trailing empty lines
+                j = i
+                while (j > 0 && lines[j] ~ /^[[:space:]]*$/) j--
+                for (k = 1; k <= j; k++) print lines[k]
+                break
+              }
+            }
+          }' /tmp/addon_content.txt > /tmp/addon_content_clean.txt
+          mv /tmp/addon_content_clean.txt /tmp/addon_content.txt
           
           echo "Generated content saved to /tmp/addon_content.txt"
 
       - name: Update main README
         run: |
-          # Read the generated content
-          ADDON_CONTENT=$(cat /tmp/addon_content.txt)
-          
-          # Create the new README with updated auto-generated section
-          awk -v content="$ADDON_CONTENT" '
-            BEGIN { in_auto = 0; printed = 0 }
+          awk '
             /<!-- Begin Auto Generated -->/ {
-              print $0
+              print
               print ""
-              print content
+              while ((getline line < "/tmp/addon_content.txt") > 0) {
+                print line
+              }
+              close("/tmp/addon_content.txt")
               print ""
-              in_auto = 1
-              printed = 1
+              skip = 1
               next
             }
             /<!-- End Auto Generated -->/ {
-              in_auto = 0
-              print $0
-              next
+              skip = 0
             }
-            !in_auto { print $0 }
-          ' README.md > README.md.tmp
+            !skip
+          ' README.md > README.md.new
           
-          # Replace the original README
-          mv README.md.tmp README.md
-          
+          mv README.md.new README.md
           echo "Main README.md updated successfully"
 
       - name: Check for changes
