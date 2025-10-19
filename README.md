@@ -18,7 +18,7 @@
 <details>
 <summary>Screenshot</summary>
 
-![Screenshot](screenshot.png)  
+![Screenshot](https://github.com/Eskander/haos-apps/blob/main/archisteamfarm/screenshot.png)  
 
 </details>
 
