@@ -9,7 +9,7 @@
 
 [ArchiSteamFarm](https://github.com/JustArchiNET/ArchiSteamFarm/) is a C# application designed to farm Steam trading cards from multiple accounts simultaneously.  
 
-![Screenshot](https://github.com/Eskander/haos-apps/blob/main/archisteamfarm/screenshot.png)  
+![Screenshot](https://raw.githubusercontent.com/Eskander/haos-apps/main/archisteamfarm/screenshot.png)  
 
 ## Documentation
 
