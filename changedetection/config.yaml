@@ -14,13 +14,9 @@ environment:
   DISABLE_VERSION_CHECK: "true"
 options:
   PLAYWRIGHT_DRIVER_URL: "ws://ec6f6e63-sockpuppetbrowser:3000"
-  USE_X_SETTINGS: 0
-  TZ: ""
-  FETCH_WORKERS: ""
-  SCREENSHOT_MAX_HEIGHT: ""
 schema:
   PLAYWRIGHT_DRIVER_URL: str
-  USE_X_SETTINGS: list(0|1)
+  USE_X_SETTINGS: list(0|1)?
   TZ: int?
   FETCH_WORKERS: int?
   SCREENSHOT_MAX_HEIGHT: int?
