@@ -1,9 +1,12 @@
 configuration:
   PLAYWRIGHT_DRIVER_URL:
+    name: PLAYWRIGHT_DRIVER_URL
     description: Use a real Chrome browser (playwright protocol)
   FETCH_WORKERS:
+    name: FETCH_WORKERS
     description: Number of parallel/concurrent fetchers
   SCREENSHOT_MAX_HEIGHT:
+    name: SCREENSHOT_MAX_HEIGHT
     description: Maximum height of screenshots, default is 16000 px
 network:
   5000/tcp: Web interface
