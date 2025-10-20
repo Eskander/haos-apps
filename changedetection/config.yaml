@@ -9,6 +9,7 @@ arch:
   - amd64
   - aarch64
 init: false
+webui: http://[HOST]:[PORT:5000]/
 environment:
   HIDE_REFERER: "true"
   DISABLE_VERSION_CHECK: "true"
@@ -17,11 +18,9 @@ options:
   PLAYWRIGHT_DRIVER_URL: "ws://ec6f6e63-sockpuppetbrowser:3000"
 schema:
   PLAYWRIGHT_DRIVER_URL: str
-  FETCH_WORKERS: int?
   SCREENSHOT_MAX_HEIGHT: int?
 ports:
   5000/tcp: 5000
-webui: http://[HOST]:[PORT:5000]/
 map:
   - type: data
     path: /datastore
