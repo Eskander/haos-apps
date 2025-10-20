@@ -1,0 +1,28 @@
+name: Update Build Dependencies
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/**'
+
+jobs:
+  automerge:
+    name: Process Dependabot PR
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Auto-Merge Dependabot PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -e
+
+          gh pr review "$PR_URL" --approve
+          gh pr edit "$PR_URL" --add-label auto
+
+          for i in {1..5}; do
+            gh pr merge "$PR_URL" --rebase && break || sleep 10
+          done
