@@ -7,6 +7,9 @@ on:
     paths:
       - '.github/**'
 
+permissions:
+  pull-requests: write
+
 jobs:
   automerge:
     name: Process Dependabot PR
