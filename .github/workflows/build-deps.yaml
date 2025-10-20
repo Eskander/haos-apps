@@ -29,3 +29,5 @@ jobs:
           for i in {1..5}; do
             gh pr merge "$PR_URL" --rebase && break || sleep 10
           done
+
+          gh pr view "$PR_URL" --json merged --jq .merged | grep -q true
