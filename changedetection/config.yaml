@@ -10,8 +10,8 @@ arch:
   - aarch64
 init: false
 environment:
-  HIDE_REFERER: true
-  DISABLE_VERSION_CHECK: true
+  HIDE_REFERER: "true"
+  DISABLE_VERSION_CHECK: "true"
 options:
   PLAYWRIGHT_DRIVER_URL: "ws://ec6f6e63-sockpuppetbrowser:3000"
   USE_X_SETTINGS: 0
