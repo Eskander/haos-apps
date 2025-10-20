@@ -1,4 +1,4 @@
-name: changedetection.io
+name: ChangeDetection.io
 version: 0.50.27
 slug: changedetection
 description: Website change detection, web page monitoring, and website change alerts.
@@ -12,16 +12,16 @@ init: false
 environment:
   HIDE_REFERER: "true"
   DISABLE_VERSION_CHECK: "true"
+  USE_X_SETTINGS: "1"
 options:
   PLAYWRIGHT_DRIVER_URL: "ws://ec6f6e63-sockpuppetbrowser:3000"
 schema:
   PLAYWRIGHT_DRIVER_URL: str
-  USE_X_SETTINGS: list(0|1)?
-  TZ: int?
   FETCH_WORKERS: int?
   SCREENSHOT_MAX_HEIGHT: int?
 ports:
   5000/tcp: 5000
+webui: http://[HOST]:[PORT:5000]/
 map:
   - type: data
     path: /datastore
