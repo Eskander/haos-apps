@@ -1,7 +1,7 @@
 name: changedetection.io
 version: 0.50.27
 slug: changedetection
-description: changedetection
+description: Website change detection, web page monitoring, and website change alerts.
 url: https://github.com/Eskander/haos-apps
 image: ghcr.io/dgtlmoon/changedetection.io
 legacy: true
@@ -9,6 +9,21 @@ arch:
   - amd64
   - aarch64
 init: false
+environment:
+  HIDE_REFERER: true
+  DISABLE_VERSION_CHECK: true
+options:
+  PLAYWRIGHT_DRIVER_URL: "ws://ec6f6e63-sockpuppetbrowser:3000"
+  USE_X_SETTINGS: 0
+  TZ: ""
+  FETCH_WORKERS: ""
+  SCREENSHOT_MAX_HEIGHT: ""
+schema:
+  PLAYWRIGHT_DRIVER_URL: str
+  USE_X_SETTINGS: list(0|1)
+  TZ: int?
+  FETCH_WORKERS: int?
+  SCREENSHOT_MAX_HEIGHT: int?
 ports:
   5000/tcp: 5000
 map:
