@@ -1,0 +1,16 @@
+name: Sock Puppet Browser
+version: 0.0.2
+slug: sockpuppetbrowser
+description: A scalable server for providing Chrome interfaces - Optional for ChangeDetection.io
+url: https://github.com/Eskander/haos-apps
+image: docker.io/dgtlmoon/sockpuppetbrowser
+legacy: true
+arch:
+  - amd64
+  - aarch64
+init: false
+privileged:
+  - SYS_ADMIN
+ports:
+  3000/tcp: null
+
