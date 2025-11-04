@@ -4,7 +4,6 @@ slug: homer
 description: A very simple static homepage for your server
 url: https://github.com/Eskander/ha-addon-homer
 image: ghcr.io/eskander/ha-addon-homer
-codenotary: mail@eskander.tn
 arch:
   - amd64
   - aarch64

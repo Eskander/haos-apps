@@ -4,7 +4,6 @@ slug: archisteamfarm
 description: C# application with primary purpose of farming Steam cards from multiple accounts simultaneously
 url: https://github.com/Eskander/ha-addon-archisteamfarm
 image: ghcr.io/eskander/ha-addon-archisteamfarm
-codenotary: mail@eskander.tn
 arch:
   - amd64
   - aarch64
