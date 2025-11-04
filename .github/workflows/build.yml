@@ -273,7 +273,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/haos-${{ env.ADDON_ID }}
           tags: |
-            type=semver,pattern={{version}},value=${{ env.VERSION }}
+            type=semver,pattern={{raw}},value=${{ env.VERSION }}
           labels: |
             io.hass.name=${{ env.ADDON_ID }}
             io.hass.version=${{ env.VERSION }}
