@@ -1,3 +1,5 @@
+## 6.2.3.1
+- Update justarchinet/archisteamfarm to 6.2.3.1
 ## 1.32
 - Change ASF_CRYPTKEY config from str to password
 ## 1.31
