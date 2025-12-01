@@ -1,3 +1,5 @@
+## 6.3.0.2
+- Update justarchinet/archisteamfarm to 6.3.0.2
 ## 6.2.3.1
 - Update justarchinet/archisteamfarm to 6.2.3.1
 - Switch to upstream versioning scheme
