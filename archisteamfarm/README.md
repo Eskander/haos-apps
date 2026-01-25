@@ -4,7 +4,7 @@
 ![AArch64 Support](https://img.shields.io/badge/aarch64-yes-green.svg)
 ![Ingress](https://img.shields.io/badge/-ingress-blueviolet.svg?logo=cliqz&logoColor=white)
 ![Pulls](https://img.shields.io/badge/dynamic/json?url=https://ghcr-badge.elias.eu.org/api/Eskander/haos-apps/haos-archisteamfarm&query=downloadCount&label=Pulls)
-![Installs](https://img.shields.io/badge/dynamic/json?url=https://analytics.home-assistant.io/addons.json&query=$["bccc8195_archisteamfarm"].total&label=Reported%20Installs)
+![Installs](https://img.shields.io/badge/dynamic/json?url=https://analytics.home-assistant.io/addons.json&query=$["ec6f6e63_archisteamfarm"].total&label=Reported%20Installs)
 
 
 [ArchiSteamFarm](https://github.com/JustArchiNET/ArchiSteamFarm/) is a C# application designed to farm Steam trading cards from multiple accounts simultaneously.  
