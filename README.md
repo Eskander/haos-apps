@@ -1,4 +1,4 @@
-# Extra Add-ons for Home Assistant 
+# Extra Apps for Home Assistant OS 
 ![Maintenance](https://img.shields.io/maintenance/yes/2026.svg)
 [![CI/CD](https://github.com/Eskander/haos-apps/actions/workflows/build.yml/badge.svg)](https://github.com/Eskander/haos-apps/actions/workflows/build.yml)
 
