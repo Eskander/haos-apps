@@ -7,6 +7,10 @@ on:
     paths:
       - '.github/**'
 
+concurrency:
+  group: build
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
