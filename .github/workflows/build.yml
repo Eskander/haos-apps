@@ -271,7 +271,7 @@ jobs:
       - name: Prepare Image Metadata
         if: env.SHOULD_BUILD == 'true'
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
         with:
