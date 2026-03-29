@@ -1,3 +1,5 @@
+## 0.54.7
+- Update dgtlmoon/changedetection.io to 0.54.7
 ## 0.54.6
 - Update dgtlmoon/changedetection.io to 0.54.6
 ## 0.54.5
