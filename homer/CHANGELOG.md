@@ -1,3 +1,5 @@
+## v26.4.1
+- Update bastienwirtz/homer to v26.4.1
 ## v25.11.1
 - Update bastienwirtz/homer to v25.11.1
 - Switch to upstream versioning scheme
