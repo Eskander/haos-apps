@@ -1,16 +1,6 @@
 name: CI/CD
 
 on:
-  workflow_dispatch:
-    inputs:
-      addon:
-        description: Addon to deploy
-        required: true
-        type: string
-      version:
-        description: Version
-        required: true
-        type: string
   pull_request:
     branches:
       - main
@@ -52,9 +42,7 @@ jobs:
         run: |
           set -e
           
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            ADDON_ID="${{ inputs.addon }}"
-          elif [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
             ADDON_ID=$(echo "${{ steps.dependabot.outputs.directory }}" | sed 's:/::g')
           else
             ADDON_ID=$(git diff --name-only HEAD~1 | awk -F/ '!/^\./ {print $1}' | sort -u)
@@ -77,13 +65,7 @@ jobs:
           VERSION=""
           BASE_NAME=""
           
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Manual workflow dispatch
-            VERSION="${{ inputs.version }}"
-            [ -z "$VERSION" ] && echo "Error: Version input is empty" && exit 1
-            echo "==> Manual version: $VERSION"
-            
-          elif [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
             # Dependabot PR
             BASE_NAME="${{ steps.dependabot.outputs.dependency-names }}"
             VERSION="${{ steps.dependabot.outputs.new-version }}"
