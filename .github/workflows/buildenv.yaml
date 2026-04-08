@@ -8,7 +8,7 @@ on:
       - '.github/**'
 
 concurrency:
-  group: build
+  group: buildenv
   cancel-in-progress: false
 
 permissions:
