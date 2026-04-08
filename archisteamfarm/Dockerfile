@@ -1,4 +1,4 @@
-FROM ghcr.io/justarchinet/archisteamfarm:6.3.3.3
+FROM ghcr.io/justarchinet/archisteamfarm:6.3.5.0
 
 # Overlay files
 COPY rootfs /
