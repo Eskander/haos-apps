@@ -1,4 +1,4 @@
-name: CI/CD
+name: Build & Deploy
 
 on:
   pull_request:
@@ -17,17 +17,10 @@ permissions:
   packages: write
 
 jobs:
-  ci:
-    name: Continuous Integration
+  ci_cd:
+    name: CI/CD
     runs-on: ubuntu-latest
-    env:
-      ADDON_ID: ''
-      VERSION: ''
-      BASE_NAME: ''
-    outputs:
-      ADDON_ID: ${{ env.ADDON_ID }}
-      VERSION: ${{ env.VERSION }}
-      BASE_NAME: ${{ env.BASE_NAME }}
+    if: github.actor == 'dependabot[bot]'
     steps:
 
       - name: Checkout Repository
@@ -35,71 +28,46 @@ jobs:
 
       - name: Fetch Dependabot Metadata
         id: dependabot
-        if: github.actor == 'dependabot[bot]'
         uses: dependabot/fetch-metadata@v3
 
       - name: Detect Addon
         run: |
           set -e
-          
-          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
-            ADDON_ID=$(echo "${{ steps.dependabot.outputs.directory }}" | sed 's:/::g')
-          else
-            ADDON_ID=$(git diff --name-only HEAD~1 | awk -F/ '!/^\./ {print $1}' | sort -u)
-            [ $(echo "$ADDON_ID" | wc -l) -gt 1 ] && echo "Error: Only one addon per PR allowed" && exit 1
-          fi
+
+          ADDON_ID=$(echo "${{ steps.dependabot.outputs.directory }}" | sed 's:/::g')
 
           [ -z "$ADDON_ID" ] && echo "Error: No addon detected" && exit 1
           [ ! -d "$ADDON_ID" ] && echo "Error: Addon '$ADDON_ID' not found" && exit 1
-          
+
           echo "ADDON_ID=$ADDON_ID" >> $GITHUB_ENV
-          
           echo "==> Detected addon: $ADDON_ID"
 
-      - name: Determine Version
+      - name: Detect Version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          
-          VERSION=""
-          BASE_NAME=""
-          
-          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
-            # Dependabot PR
-            BASE_NAME="${{ steps.dependabot.outputs.dependency-names }}"
-            VERSION="${{ steps.dependabot.outputs.new-version }}"
-            
-            if [ -z "$VERSION" ]; then
-              echo "Fetching version from GitHub API..."
-              VERSION=$(gh api repos/$BASE_NAME/releases/latest --jq .tag_name)
-            fi
-            
-            [ -z "$VERSION" ] && echo "Error: Failed to determine base image version" && exit 1
-            echo "==> Base image: $BASE_NAME @ $VERSION"
-            
-          else
-            # Regular PR - no version needed
-            echo "==> Regular PR - no version determination needed"
-          fi
-          
-          if [ -n "$VERSION" ]; then
-            echo "VERSION=$VERSION" >> $GITHUB_ENV
-          fi
-          
-          if [ -n "$BASE_NAME" ]; then
-            echo "BASE_NAME=$BASE_NAME" >> $GITHUB_ENV
+
+          BASE_NAME="${{ steps.dependabot.outputs.dependency-names }}"
+          VERSION="${{ steps.dependabot.outputs.new-version }}"
+
+          if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
+            echo "Fetching version from GitHub API..."
+            VERSION=$(gh api repos/$BASE_NAME/releases/latest --jq .tag_name)
           fi
 
-      - name: Update Config Version for CI
-        if: env.VERSION != ''
+          [ -z "$VERSION" ] || [ "$VERSION" = "latest" ] && echo "Error: Failed to determine base image version" && exit 1
+
+          echo "BASE_NAME=$BASE_NAME" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "==> Base image: $BASE_NAME @ $VERSION"
+
+      - name: Update Config Version
         run: |
           set -e
-          
-          # Update version in config for CI build
+
           yq eval -i ".version = \"$VERSION\"" $ADDON_ID/config.yaml
-          
-          echo "==> Set $ADDON_ID version to $VERSION for CI"
+          echo "==> Set $ADDON_ID version to $VERSION"
 
       - name: Lint Addon Configuration
         uses: frenck/action-addon-linter@v2
@@ -125,20 +93,20 @@ jobs:
       - name: Test Container Health
         run: |
           set -e
-          
+
           echo "Starting test container..."
           docker run -d --name test-container test-image:latest
-          
+
           TIMEOUT=120
           INTERVAL=5
           SUCCESS=false
-          
+
           for ((i=0; i<TIMEOUT; i+=INTERVAL)); do
             HEALTH=$(docker inspect --format='{{.State.Health.Status}}' test-container 2>/dev/null || true)
             STATUS=$(docker inspect --format='{{.State.Status}}' test-container)
-            
+
             echo "[$i s] Status: $STATUS | Health: ${HEALTH:-none}"
-            
+
             if [ "$HEALTH" = "healthy" ]; then
               echo "==> Container health check passed"
               SUCCESS=true
@@ -156,74 +124,24 @@ jobs:
               SUCCESS=true
               break
             fi
-            
+
             sleep $INTERVAL
           done
-          
+
           if [ "$SUCCESS" = "false" ]; then
             echo "Error: Timeout waiting for container"
             docker logs test-container
             exit 1
           fi
-          
+
           docker stop test-container
           docker rm test-container
-
-      - name: Auto-Merge Dependabot PR
-        if: github.actor == 'dependabot[bot]'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          set -e
-
-          gh pr review "$PR_URL" --approve
-          gh pr edit "$PR_URL" --add-label auto
-
-          for i in {1..5}; do
-            gh pr merge "$PR_URL" --rebase && break || sleep 10
-          done
-          
-          echo "==> Auto-merged PR for $ADDON_ID"
-
-  cd:
-    name: Continuous Deployment
-    runs-on: ubuntu-latest
-    needs: [ci]
-    if: needs.ci.outputs.VERSION != ''
-    env:
-      ADDON_ID: ${{ needs.ci.outputs.ADDON_ID }}
-      VERSION: ${{ needs.ci.outputs.VERSION }}
-      BASE_NAME: ${{ needs.ci.outputs.BASE_NAME }}
-    steps:
-
-      - name: Checkout Repository
-        uses: actions/checkout@v6
-        with:
-          ref: main
-
-      - name: Update Version and Changelog
-        run: |
-          set -e
-
-          # Update config version
-          yq eval -i ".version = \"$VERSION\"" $ADDON_ID/config.yaml
-
-          # Update changelog
-          if [ -n "$BASE_NAME" ]; then
-            ENTRY="## $VERSION\n- Update $BASE_NAME to $VERSION\n"
-          else
-            ENTRY="## $VERSION\n- TODO\n"
-          fi
-          echo -e "$ENTRY$(cat $ADDON_ID/CHANGELOG.md)" > $ADDON_ID/CHANGELOG.md
-          
-          echo "==> Updated $ADDON_ID version and changelog to $VERSION"
 
       - name: Check if Image Should Be Built
         run: |
           IMAGE=$(yq eval '.image' $ADDON_ID/config.yaml)
           EXPECTED_REPO="$(echo ghcr.io/${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')"
-          
+
           if [[ "$IMAGE" == *"$EXPECTED_REPO"* ]]; then
             echo "SHOULD_BUILD=true" >> $GITHUB_ENV
             echo "==> Image contains '$EXPECTED_REPO' - will build and push"
@@ -237,10 +155,6 @@ jobs:
         uses: docker/setup-qemu-action@v4
         with:
           platforms: linux/amd64,linux/arm64
-
-      - name: Setup Docker Buildx
-        if: env.SHOULD_BUILD == 'true'
-        uses: docker/setup-buildx-action@v4
 
       - name: Login to GitHub Container Registry
         if: env.SHOULD_BUILD == 'true'
@@ -287,15 +201,38 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
 
+      - name: Auto-Merge Dependabot PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -e
+
+          gh pr review "$PR_URL" --approve
+          gh pr edit "$PR_URL" --add-label auto
+
+          for i in {1..5}; do
+            gh pr merge "$PR_URL" --rebase && break || sleep 10
+          done
+
+          echo "==> Auto-merged PR for $ADDON_ID"
+
       - name: Commit and Push Version Update
         run: |
           set -e
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
+          git fetch origin main
+          git checkout main
+
+          yq eval -i ".version = \"$VERSION\"" $ADDON_ID/config.yaml
+          ENTRY="## $VERSION\n- Update $BASE_NAME to $VERSION\n"
+          echo -e "$ENTRY$(cat $ADDON_ID/CHANGELOG.md)" > $ADDON_ID/CHANGELOG.md
+
           git add $ADDON_ID/config.yaml $ADDON_ID/CHANGELOG.md
           git commit -m "[$ADDON_ID] Bump version to $VERSION"
           git push
-          
+
           echo "==> Published $ADDON_ID $VERSION"
