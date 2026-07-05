@@ -1,5 +1,5 @@
 name: ArchiSteamFarm
-version: "6.3.6.1"
+version: "6.3.7.0"
 slug: archisteamfarm
 description: C# application with primary purpose of farming Steam cards from multiple accounts simultaneously
 url: https://github.com/Eskander/haos-apps
