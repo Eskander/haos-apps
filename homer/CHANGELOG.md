@@ -1,3 +1,5 @@
+## v26.08.3
+- Update bastienwirtz/homer to v26.08.3
 ## v26.4.2
 - Update bastienwirtz/homer to v26.4.2
 ## v26.4.1
