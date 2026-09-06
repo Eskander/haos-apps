@@ -1,4 +1,4 @@
-FROM ghcr.io/justarchinet/archisteamfarm:latest@sha256:fa6c8eb8b1469bf74bb5389486da7728a20b359a5aa79d9061127c4aa6b7c859
+FROM ghcr.io/justarchinet/archisteamfarm:latest@sha256:1827bb7e27f8e3e1d8560d9939a7edd8b1322c5903533ec776bc48b7685d1269
 
 # Overlay files
 COPY rootfs /
