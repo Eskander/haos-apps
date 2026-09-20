@@ -1,1 +1,1 @@
-FROM ghcr.io/dgtlmoon/changedetection.io:0.60.4
+FROM ghcr.io/dgtlmoon/changedetection.io:0.60.7
