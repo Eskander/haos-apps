@@ -14,6 +14,6 @@ panel_icon: mdi:server
 ports:
   8080/tcp: null
 map:
-  - type: addon_config
+  - type: app_config
     path: /www/assets
     read_only: false
