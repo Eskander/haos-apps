@@ -18,7 +18,7 @@ schema:
 ports:
   1242/tcp: null
 map:
-  - type: addon_config
+  - type: app_config
     path: /app/config
     read_only: false
   - type: data
