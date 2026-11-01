@@ -1,3 +1,5 @@
+## 6.3.11.7
+- Update justarchinet/archisteamfarm to 6.3.11.7
 ## 6.3.10.6
 - Update justarchinet/archisteamfarm to 6.3.10.6
 ## 6.3.10.3
