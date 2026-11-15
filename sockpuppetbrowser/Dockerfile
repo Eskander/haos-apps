@@ -1,1 +1,1 @@
-FROM docker.io/dgtlmoon/sockpuppetbrowser:0.0.3
+FROM docker.io/dgtlmoon/sockpuppetbrowser:0.0.4
