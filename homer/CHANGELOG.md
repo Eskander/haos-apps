@@ -1,3 +1,5 @@
+## v26.11.3
+- Update homer-dashboard/homer to v26.11.3
 ## v26.08.3
 - Update bastienwirtz/homer to v26.08.3
 ## v26.4.2
