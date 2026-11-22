@@ -1,5 +1,5 @@
 name: Sock Puppet Browser
-version: 0.0.4
+version: 0.0.5
 slug: sockpuppetbrowser
 description: A scalable server for providing Chrome interfaces - Optional for ChangeDetection.io
 url: https://github.com/Eskander/haos-apps
