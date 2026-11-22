@@ -1,3 +1,5 @@
+## v26.11.4
+- Update homer-dashboard/homer to v26.11.4
 ## v26.11.3
 - Update homer-dashboard/homer to v26.11.3
 ## v26.08.3
